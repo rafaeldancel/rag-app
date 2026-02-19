@@ -81,6 +81,9 @@ Always include a "Sources" section that lists which SOURCE numbers you used.`
 
 export const ingestFromApi = onCall({ cors: true, region: 'us-central1' }, async req => {
   const url = String(req.data?.url || '')
+  if (!req.auth) {
+    throw new Error('Unauthorized - must be logged in')
+  }
   if (!url) throw new Error('Missing url')
 
   const res = await fetch(url)
@@ -118,3 +121,5 @@ export const ingestFromApi = onCall({ cors: true, region: 'us-central1' }, async
   await upsertDatapoints(datapoints)
   return { docId: docRef.id, chunkCount: chunks.length }
 })
+
+export { ingestFromGcs } from './gcsIngest'
