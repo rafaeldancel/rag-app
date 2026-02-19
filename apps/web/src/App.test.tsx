@@ -1,60 +1,31 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
 import { App } from './App'
 
+// Mock firebase to avoid real API calls in tests
+vi.mock('./firebase', () => ({
+  chatCallable: vi.fn(),
+  ingestCallable: vi.fn(),
+}))
+
 describe('App', () => {
-  it('renders the header with title', () => {
+  it('renders the RAG App heading', () => {
     render(<App />)
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('The Hytel Way')
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('RAG App')
   })
 
-  it('renders the counter with initial value of 0', () => {
+  it('renders the RAG Chat heading', () => {
     render(<App />)
-    expect(screen.getByText('0')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('RAG Chat')
   })
 
-  it('increments the counter when clicking increase button', () => {
+  it('renders the chat input', () => {
     render(<App />)
-    const increaseButton = screen.getByRole('button', { name: /increment counter/i })
-    fireEvent.click(increaseButton)
-    expect(screen.getByText('1')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Ask a question…')).toBeInTheDocument()
   })
 
-  it('decrements the counter when clicking decrease button', () => {
+  it('renders the send button', () => {
     render(<App />)
-    const decreaseButton = screen.getByRole('button', { name: /decrement counter/i })
-    fireEvent.click(decreaseButton)
-    expect(screen.getByText('-1')).toBeInTheDocument()
-  })
-
-  it('resets counter to zero when clicking reset button', () => {
-    render(<App />)
-    const increaseButton = screen.getByRole('button', { name: /increment counter/i })
-    const resetButton = screen.getByRole('button', { name: /reset/i })
-
-    // Increment a few times
-    fireEvent.click(increaseButton)
-    fireEvent.click(increaseButton)
-    expect(screen.getByText('2')).toBeInTheDocument()
-
-    // Reset
-    fireEvent.click(resetButton)
-    expect(screen.getByText('0')).toBeInTheDocument()
-  })
-
-  it('renders the stack overview card', () => {
-    render(<App />)
-    expect(screen.getByText('Stack Overview', { exact: false })).toBeInTheDocument()
-  })
-
-  it('renders the monorepo structure card', () => {
-    render(<App />)
-    expect(screen.getByText('Monorepo Structure', { exact: false })).toBeInTheDocument()
-  })
-
-  it('renders Vite and React logos', () => {
-    render(<App />)
-    expect(screen.getByAltText('Vite logo')).toBeInTheDocument()
-    expect(screen.getByAltText('React logo')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /send/i })).toBeInTheDocument()
   })
 })

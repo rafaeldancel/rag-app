@@ -14,10 +14,7 @@ export async function embedTexts(texts: string[]): Promise<number[][]> {
     model: ENV.embeddingModel,
     contents: texts.map(t => ({ role: 'user', parts: [{ text: t }] })),
   })
-  const vectors =
-    resp.embeddings?.map((e: { values: number[] }) => e.values as number[]) ??
-    resp.data?.map((e: { embedding?: { values: number[] } }) => e.embedding?.values as number[]) ??
-    []
+  const vectors = resp.embeddings?.map(e => e.values ?? []) ?? []
   if (vectors.length !== texts.length) {
     throw new Error(`Embedding count mismatch: got ${vectors.length}, expected ${texts.length}`)
   }
