@@ -1,0 +1,75 @@
+# 📚 Logos: Unified Source Repository & RAG Strategy
+
+**Guiding Principle:** "Maximum Logic, Minimum Bloat." We prioritize distilled, high-density arguments over raw text to ensure the AI is fast, accurate, and cost-effective.
+
+---
+
+## 1. The Distilled Knowledge Base (The "Courtroom" Library)
+
+To avoid token bloat and copyright issues, we do not store full books. We store **Atomic Argument Maps**—structured summaries of core logic and "Steel Man" counter-points.
+
+| Tier  | Category            | Theist Evidence (The "Case")                                                           | Skeptic Steel Man (The "Rebuttal")                                                       |
+| ----- | ------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| **0** | **Logic & Science** | **W.L. Craig / Stephen Meyer:** Kalam Cosmological, Fine-Tuning, DNA as Info.          | **B. Russell / R. Dawkins:** Infinite Regress, Multi-verse, Self-Organization.           |
+| **1** | **History**         | **N.T. Wright / C. Blomberg:** Manuscript Reliability, Minimal Facts for Resurrection. | **B. Ehrman / Price & Lowder:** Scribal Corruption, Hallucination/Naturalistic theories. |
+| **2** | **Meaning**         | **V. Frankl / C.S. Lewis:** Objective Morality, Desire for the Infinite.               | **F. Nietzsche / A. Camus:** Nihilism, Absurdism, The "Ubermensch."                      |
+
+---
+
+## 2. The "Cliffe-Peter" Transcript Engine
+
+Instead of raw video transcripts, we use a **"Golden Q&A"** approach to capture the voice and logic of **Cliffe Knechtle**.
+
+- **Source:** 50 "Give Me An Answer" campus debate transcripts.
+- **Compression Logic:** Transcripts are pre-processed into **Atomic Q&A Units**:
+- **User Objection:** "How can God be good if there is suffering?"
+- **Peter/Cliffe Logic:** "The Free Will Defense: Love requires a choice; a choice requires the possibility of a wrong turn."
+- **Metadata Tags:** `Tier_0`, `Axis_Metaphysics`, `Style_Analogy`.
+
+- **Result:** Peter pulls a ~150-token "Logic Unit" instead of a 2,000-token raw transcript.
+
+---
+
+## 3. The "Thin-Client" RAG Architecture (Cost Efficiency)
+
+To keep Firebase costs low and prevent "Token Bloat," we implement these four industry-standard layers:
+
+### A. Context Caching (The 90% Discount)
+
+We use **Vertex AI Context Caching** for Peter's core instructions and the "3-Axis" logic.
+
+- **How:** The system instructions and the "Courtroom Rules" are cached once per session.
+- **Benefit:** You pay full price for instructions only on the first message; all subsequent messages in that hour get a **90% token discount**.
+
+### B. Semantic Caching (The "Bypass" Layer)
+
+Before calling the LLM, the system checks a **Firestore Semantic Cache**.
+
+- **How:** If a new query is **95% semantically similar** to a previous one, we serve the previously generated response.
+- **Benefit:** LLM tokens used for common repetitive questions.
+
+### C. Summarized Rolling History
+
+Instead of sending the whole chat history, we send:
+
+- The **last 5 turns** in full detail.
+- A **1-paragraph summary** of everything before that (e.g., _"The user previously accepted the Big Bang evidence but remains skeptical of miracles."_).
+
+### D. Multi-Model Tiering
+
+- **Primary Engine:** **Gemini 3 Flash** for 95% of interactions (fast, cheap, efficient).
+- **Reasoning Engine:** **Gemini 1.5 Pro** _only_ for complex "Tier 2" philosophical deep-dives requiring high reasoning density.
+
+---
+
+## 4. UI Implementation: The "Grounding Switch"
+
+To maintain transparency without cluttering the screen:
+
+- **Citation Icon:** Appears next to Peter's claims.
+- **The "Clash" View:** Tapping the icon shows a split view:
+- _"Peter utilized the logic of [N.T. Wright] while accounting for the critiques of [Bart Ehrman]."_
+
+- **Direct Link:** Provides a deep link to the relevant verse in the **YouVersion API**.
+
+---

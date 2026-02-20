@@ -1,0 +1,104 @@
+### Phase 0: The Infrastructure (Foundation)
+
+_Goal: Establish the monorepo architecture and secure Cloud-to-GitHub connectivity._
+
+- [ ] **Scaffold Monorepo:**
+- [ ] Initialize Turborepo with `pnpm`.
+- [ ] Set up `apps/web` (Vite/React) and `apps/functions` (tRPC/Firebase).
+- [ ] Configure `@repo/shared` for Zod schemas (Worldview Audit, Diary, Notes).
+
+- [ ] **GCP & Firebase Setup:**
+- [ ] Create Firebase project (Blaze Plan) and enable Firestore (Native Mode).
+- [ ] Enable **Vertex AI API** and **Secret Manager**.
+
+- [ ] **CI/CD Pipeline:**
+- [ ] Run `scripts/setup-wif.sh` to configure Workload Identity Federation.
+- [ ] Add `GCP_WORKLOAD_IDENTITY_PROVIDER` and `GCP_SA_EMAIL` to GitHub Secrets.
+- [ ] Verify the first automated deployment of a hello-world tRPC procedure.
+
+---
+
+### Phase 1: The Knowledge Engine (RAG Prep)
+
+_Goal: Transform raw Cliffe Knechtle transcripts and the "Courtroom Library" into a high-density vector database._
+
+- [ ] **Cliffe Transcript Distillation:**
+- [ ] Write a script to parse 50 "Give Me An Answer" transcripts.
+- [ ] Compress transcripts into **Atomic Q&A Units** (metadata-tagged JSON).
+
+- [ ] **The "Steel Man" Argument Mapping:**
+- [ ] Create JSON maps for Tier 0-2 (Theist logic vs. Skeptic counter-points).
+
+- [ ] **Vector Indexing:**
+- [ ] Generate embeddings for all Atomic Units using Vertex AI.
+- [ ] Deploy the **Vertex AI Search** index with these "Courtroom Library" embeddings.
+
+- [ ] **YouVersion Integration:**
+- [ ] Create the server-side proxy in `apps/functions` to fetch Scripture text via the YouVersion API.
+
+---
+
+### Phase 2: The Logic (Peter's Backend)
+
+_Goal: Develop Peter’s reasoning engine with the "Thin-Client" cost-optimization layers._
+
+- [ ] **Peter's System Prompt:**
+- [ ] Define the "Logic Bridge" prompt (adapting tone to the 3-Axis Audit results).
+
+- [ ] **Thin-Client Optimization:**
+- [ ] **Context Caching:** Implement Vertex AI cached tokens for the ~2,500 token instruction set.
+- [ ] **Semantic Cache:** Build a Firestore lookup to check for 0.95+ semantic similarity on previous queries.
+
+- [ ] **The Balanced RAG Procedure:**
+- [ ] Create the tRPC mutation `peter.ask` that retrieves exactly 1 theist and 1 skeptic node for every query.
+
+---
+
+### Phase 3: The Interaction (Web Frontend)
+
+_Goal: Build the user-facing Bible reader and the Peter chat experience._
+
+- [ ] **Worldview Audit UI:**
+- [ ] Build the 3-Axis sliding scale using Shadcn UI.
+- [ ] Implement the "Topic Suggestions" landing page that triggers upon audit completion.
+
+- [ ] **Professional Reader:**
+- [ ] Build the verse-viewing engine with translation switching (NASB, ESV, NIV).
+- [ ] Implement the **Peter Action Modal** (Highlight, Note, Ask Peter) on text selection.
+
+- [ ] **Peter Chat Interface:**
+- [ ] Build the streaming chat UI (TanStack Query + React).
+- [ ] Implement the **"Grounding Switch"** to show citations and "Clash" details.
+
+---
+
+### Phase 4: Personalization & Habit Forming
+
+_Goal: Implement long-term user memory and the visual progress tracking._
+
+- [ ] **Vectorized Diary:**
+- [ ] Setup a Cloud Function trigger: when a diary/note is saved, embed it into the user's personal vector collection.
+
+- [ ] **The Constellation Map:**
+- [ ] Build the non-linear map UI to visualize "Discovered Topics" and "Engagement Streaks."
+
+- [ ] **The "Today" Dashboard:**
+- [] Implement Settings toggles for Verse of the Day and Daily Prayer.
+- [ ] Build the **Dual-Depth Insight** feature (Individual entry vs. Global trajectory).
+
+---
+
+### Phase 5: Hardening & Launch
+
+_Goal: Security rules, performance auditing, and deployment._
+
+- [ ] **Firestore Security Rules:**
+- [ ] Deploy rules ensuring strict user-ownership of `diary` and `notes`.
+
+- [ ] **Budget Guardrails:**
+- [ ] Set `max_output_tokens` on all Gemini calls and configure GCP billing alerts.
+
+- [ ] **Production Release:**
+- [ ] Merge `dev` to `main` and verify the full automated deployment.
+
+---
