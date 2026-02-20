@@ -26,7 +26,8 @@ export async function upsertDatapoints(datapoints: Datapoint[]) {
 
 export async function findNeighbors(queryVector: number[], k = 8) {
   const token = await getAccessToken()
-  const url = `https://${ENV.location}-aiplatform.googleapis.com/v1/${ENV.vectorEndpointResourceName}:findNeighbors`
+  const publicDomain = '2087810271.us-central1-251918570661.vdb.vertexai.goog'
+  const url = `https://${publicDomain}/v1/${ENV.vectorEndpointResourceName}:findNeighbors`
   const res = await fetch(url, {
     method: 'POST',
     headers: {
