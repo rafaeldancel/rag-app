@@ -3,7 +3,7 @@ import { onObjectFinalized } from 'firebase-functions/v2/storage'
 import { Storage } from '@google-cloud/storage'
 import { chunkText } from './chunking'
 import { embedTexts } from './embeddings'
-import { upsertDatapoints } from './vectorSearch'
+import { batchStoreChunks } from './firestoreSearch'
 
 const storage = new Storage()
 
@@ -36,25 +36,12 @@ export const ingestFromGcs = onObjectFinalized(
 
     const chunks = chunkText(raw)
     const vectors = await embedTexts(chunks)
-    const batch = db.batch()
 
-    const datapoints = chunks.map((text: string, i: number) => {
-      const chunkId = String(i).padStart(4, '0')
-      const datapointId = `${docRef.id}_${chunkId}`
-      batch.set(docRef.collection('chunks').doc(chunkId), {
-        text,
-        vectorDatapointId: datapointId,
-        tokenCountApprox: Math.ceil(text.length / 4),
-      })
-      return {
-        datapointId,
-        featureVector: vectors[i],
-        restricts: [{ namespace: 'docId', allowList: [docRef.id] }],
-      }
-    })
+    await batchStoreChunks(
+      docRef.id,
+      chunks.map((text: string, i: number) => ({ text, vector: vectors[i] }))
+    )
 
-    await batch.commit()
-    await upsertDatapoints(datapoints)
     console.log(`Ingested ${chunks.length} chunks from ${filePath}`)
   }
 )

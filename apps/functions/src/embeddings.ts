@@ -13,6 +13,9 @@ export async function embedTexts(texts: string[]): Promise<number[][]> {
   const resp = await ai.models.embedContent({
     model: ENV.embeddingModel,
     contents: texts.map(t => ({ role: 'user', parts: [{ text: t }] })),
+    config: {
+      outputDimensionality: 2048,
+    },
   })
   const vectors = resp.embeddings?.map(e => e.values ?? []) ?? []
   if (vectors.length !== texts.length) {

@@ -38,9 +38,6 @@ importers:
       '@google/genai':
         specifier: ^1.41.0
         version: 1.41.0
-      '@repo/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       '@trpc/server':
         specifier: ^11.0.0-rc.660
         version: 11.8.1(typescript@5.5.4)
@@ -50,18 +47,12 @@ importers:
       firebase-functions:
         specifier: ^7.0.5
         version: 7.0.5(firebase-admin@13.6.1)
-      google-auth-library:
-        specifier: ^10.5.0
-        version: 10.5.0
       zod:
         specifier: ^3.23.8
         version: 3.25.76
     devDependencies:
-      '@repo/config':
-        specifier: workspace:*
-        version: link:../../packages/config
       '@repo/eslint-config':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../packages/eslint-config
       esbuild:
         specifier: ^0.27.3
@@ -3256,6 +3247,7 @@ packages:
 
   /emoji-regex@8.0.0:
     resolution: {integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==}
+    requiresBuild: true
     dev: false
 
   /emoji-regex@9.2.2:
@@ -3397,6 +3389,7 @@ packages:
   /escalade@3.2.0:
     resolution: {integrity: sha512-WUj2qlxaQtO4g6Pq5c29GTcWGDyd8itL8zTlipgECz3JesAiiOKotd8JU6otB3PACgG6xkJUyVhboMS+bje/jA==}
     engines: {node: '>=6'}
+    requiresBuild: true
 
   /escape-html@1.0.3:
     resolution: {integrity: sha512-NiSupZ4OeuGwr68lGIeym/ksIZMJodUGOSCZ/FSnTxcrekbvqrgdUxlJOMpijaKZVjAJrWrGs/6Jy8OMuyj9ow==}
@@ -4422,6 +4415,7 @@ packages:
   /is-fullwidth-code-point@3.0.0:
     resolution: {integrity: sha512-zymm5+u+sCsSWyD9qNaejV3DFvhCKclKdizYaJUuHA83RLjb7nSuGnddCHGv0hk+KY7BMAlsWeK4Ueg6EV6XQg==}
     engines: {node: '>=8'}
+    requiresBuild: true
     dev: false
 
   /is-fullwidth-code-point@4.0.0:
@@ -5047,6 +5041,7 @@ packages:
   /object-hash@3.0.0:
     resolution: {integrity: sha512-RSn9F68PjH9HqtltsSnqYC1XXoWe9Bju5+213R98cNGttag9q9yAOTzdbsqvIa7aNm5WffBZFpWYr2aWrklWAw==}
     engines: {node: '>= 6'}
+    requiresBuild: true
 
   /object-inspect@1.13.4:
     resolution: {integrity: sha512-W67iLl4J2EXEGTbfeHCffrjDfitvLANg0UlX3wFUUSTx92KXRFegMHUVgSqE+wvhAbi4WqjGg9czysTV2Epbew==}

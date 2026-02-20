@@ -3,8 +3,7 @@ import { onCall } from 'firebase-functions/v2/https'
 import { GoogleGenAI } from '@google/genai'
 import { ENV } from './env'
 import { embedTexts } from './embeddings'
-import { findNeighbors } from './vectorSearch'
-import { upsertDatapoints } from './vectorSearch'
+import { findNearestChunks, batchStoreChunks } from './firestoreSearch'
 import { chunkText } from './chunking'
 
 admin.initializeApp()
@@ -21,28 +20,27 @@ export const chat = onCall({ cors: true, region: ENV.location }, async req => {
   const question = String(req.data?.question || '').trim()
   if (!question) throw new Error('Missing question')
 
+  // 1) embed the query
   const [qVec] = await embedTexts([question])
-  const neighbors = await findNeighbors(qVec, 8)
 
-  const chunkRefs = neighbors
-    .map((n: { datapoint?: { datapointId?: string } }) => n.datapoint?.datapointId)
-    .filter(Boolean)
+  // 2) vector search via Firestore native
+  const nearestChunks = await findNearestChunks(qVec, 6)
+
+  // 3) fetch parent doc metadata for citations
   const chunks: Array<{ id: string; text: string; sourceUri?: string; title?: string }> = []
 
-  for (const id of chunkRefs) {
-    const [docId, chunkId] = String(id).split('_', 2)
-    const snap = await db.doc(`docs/${docId}/chunks/${chunkId}`).get()
-    if (!snap.exists) continue
-    const chunk = snap.data() as {
-      text: string
-      vectorDatapointId?: string
-      tokenCountApprox?: number
-    }
-    const docSnap = await db.doc(`docs/${docId}`).get()
+  for (const chunk of nearestChunks) {
+    const docSnap = await db.doc(`docs/${chunk.docId}`).get()
     const doc = docSnap.data() as { sourceUri?: string; title?: string }
-    chunks.push({ id, text: chunk.text, sourceUri: doc?.sourceUri, title: doc?.title })
+    chunks.push({
+      id: chunk.id,
+      text: chunk.text,
+      sourceUri: doc?.sourceUri,
+      title: doc?.title,
+    })
   }
 
+  // 4) prompt Gemini with grounded context
   const ai = vertexClient()
   const contextBlock = chunks
     .slice(0, 6)
@@ -74,7 +72,6 @@ Always include a "Sources" section that lists which SOURCE numbers you used.`
       sourceNo: i + 1,
       title: c.title,
       uri: c.sourceUri,
-      datapointId: c.id,
     })),
   }
 })
@@ -100,25 +97,12 @@ export const ingestFromApi = onCall({ cors: true, region: 'us-central1' }, async
 
   const chunks = chunkText(raw)
   const vectors = await embedTexts(chunks)
-  const batch = db.batch()
 
-  const datapoints = chunks.map((text, i) => {
-    const chunkId = String(i).padStart(4, '0')
-    const datapointId = `${docRef.id}_${chunkId}`
-    batch.set(docRef.collection('chunks').doc(chunkId), {
-      text,
-      vectorDatapointId: datapointId,
-      tokenCountApprox: Math.ceil(text.length / 4),
-    })
-    return {
-      datapointId,
-      featureVector: vectors[i],
-      restricts: [{ namespace: 'docId', allowList: [docRef.id] }],
-    }
-  })
+  await batchStoreChunks(
+    docRef.id,
+    chunks.map((text: string, i: number) => ({ text, vector: vectors[i] }))
+  )
 
-  await batch.commit()
-  await upsertDatapoints(datapoints)
   return { docId: docRef.id, chunkCount: chunks.length }
 })
 
