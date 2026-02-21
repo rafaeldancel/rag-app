@@ -1,39 +1,41 @@
 # Technical Design Document (TDD): **Logos**
 
-**Version:** 1.0
+**Version:** 2.0 (Integrated Bible RAG)
 
 **Date:** February 20, 2026
 
-**Tech Stack:** React, TypeScript, Turborepo, Firebase, tRPC, Vertex AI.
+**Status:** Implementation Ready
 
 ---
 
 ## 1. System Architecture
 
-Logos follows a **Monorepo** architecture powered by **Turborepo** to maintain strict type-safety between the frontend, backend, and shared logic. The system is designed as a "Thin-Client" RAG application where the heavy lifting (reasoning and retrieval) is offloaded to the cloud while keeping the UI snappy.
+**Logos** is a high-performance mentorship platform built on a **Monorepo** (Turborepo) architecture. It leverages a **Thin-Client RAG** model, where the React frontend remains lightweight, and complex theological reasoning is handled by **tRPC** procedures in Firebase Cloud Functions.
 
-### High-Level Diagram
+### 🏗️ Architectural Overview
 
-```mermaid
-graph TD
-    User((User)) --> Web[React Frontend /apps/web]
-    Web --> tRPC[tRPC Client /trpc]
-    tRPC --> Server[Cloud Functions /apps/functions]
+Code snippet
 
-    subgraph "Logic & Reasoning"
+#
+
+`graph TD
+User((User)) --> Web[React Frontend /apps/web]
+Web --> tRPC[tRPC Client]
+tRPC --> Server[Cloud Functions /apps/functions]
+
+    subgraph "Reasoning Engine"
         Server --> RAG[RAG Pipeline]
         RAG --> Gemini[Vertex AI: Gemini 3 Flash]
     end
 
     subgraph "Persistence & Memory"
         Server --> Firestore[(Firestore: User Data)]
-        RAG --> KnowledgeDB[Vertex AI Search: Courtroom Library]
+        RAG --> BibleDB[Firestore Vector Index: Whole Bible]
+        RAG --> CourtDB[Vertex AI Search: Courtroom Library]
         RAG --> Cache[Firestore: Semantic Cache]
     end
 
-    Gemini --> User
-
-```
+    Gemini --> User`
 
 ---
 
@@ -41,73 +43,70 @@ graph TD
 
 ### 2.1 Frontend (`apps/web`)
 
-- **Framework:** React 19 + Vite 7.
-- **Styling:** Tailwind CSS v4 + Shadcn UI components.
-- **State Management:** \* **Server State:** TanStack Query (via tRPC) for data fetching and mutations.
-- **Local State:** Zustand for UI-specific states (e.g., chat visibility, reader preferences).
-
-- **Bible Reader:** Secured proxy connection to the **YouVersion Platform API** to fetch verse text and cross-references.
+- **Core:** React 19, TypeScript 5.x.
+- **Data Fetching:** **TanStack Query** integrated with the tRPC client for end-to-end type safety.
+- **UI/UX:** Shadcn UI (Tailwind CSS v4). Custom **Constellation Map** rendered via SVG or Canvas for non-linear progress tracking.
+- **Bible Reader:** Secured proxy connection to the **YouVersion Platform API** for live scripture viewing and translation switching.
 
 ### 2.2 Backend (`apps/functions`)
 
-- **API Layer:** **tRPC** implementation via Firebase Cloud Functions.
-- **Language:** TypeScript (Strict mode).
-- **RAG Orchestration:**
-- **Embeddings:** `text-multilingual-embedding-002` (Vertex AI).
-- **Context Management:** Custom logic to prioritize recent chat history and relevant diary entries before final prompt assembly.
+- **API Layer:** **tRPC** implementation via Firebase Cloud Functions (v2).
+- **Logic Orchestrator:** Manages the **"Courtroom Logic"**—ensuring every prompt is balanced with scripture, theist evidence, and skeptic steel-manning.
+- **Environment:** Node.js 22.x (LTS) with GCP Secret Manager for API keys.
 
 ### 2.3 Shared Packages (`packages/*`)
 
-- **`@repo/shared`:** Centralized Zod schemas (User profile, 3-Axis results, Diary entry types).
-- **`@repo/ui`:** Shared component library ensuring UI consistency between the Web and future mobile versions.
-- **`@repo/typescript-config`:** Shared strict compiler configurations.
+- **`@repo/shared`:** Zod schemas for the 3-Axis Audit, Diary Entries, and Note types.
+- **`@repo/ui`:** Shared React components (Peter Action Modal, Worldview Sliders).
 
 ---
 
-## 3. Data Design & Memory
+## 3. Data Design: The "Bible-First" RAG
 
-### 3.1 Firestore Collections
+### 3.1 Bible Vectorization (Primary Source)
 
-| Collection       | Field Snapshot                                             | Purpose                                  |
-| ---------------- | ---------------------------------------------------------- | ---------------------------------------- |
-| `users`          | `{ worldview_axes: { e: number, o: number, m: number } }`  | Stores the Audit baseline.               |
-| `diary`          | `{ content: string, vector_id: string, insight: string }`  | Individual reflections and AI responses. |
-| `notes`          | `{ verse_id: string, text: string, user_id: string }`      | User annotations on Scripture.           |
-| `semantic_cache` | `{ query_hash: string, response: string, ttl: timestamp }` | Minimizes redundant LLM calls.           |
+- **Storage:** The entire Bible (NASB/ESV) is stored in the `bible_verses` Firestore collection.
+- **Indexing:** Each verse is an individual document with a pre-calculated vector (`embedding` field).
+- **Indexing Logic:** Use **Firestore Vector Search** with `DOT_PRODUCT` distance measure on unit-normalized vectors for maximum efficiency.
+- **Schema:**TypeScript
+  #
+  `{
+  verse_id: "GEN_1_1",
+  text: "In the beginning...",
+  embedding: [0.12, -0.05, ...], // 768-dim (Vertex AI)
+  metadata: { book: "Genesis", chapter: 1, verse: 1 }
+}`
 
-### 3.2 Vector Search Logic
+### 3.2 Personal Context Memory
 
-The system uses **Vertex AI Search** for the "Courtroom Library" and **Firestore Vector Search** for personal memory.
-
-- **Clash Logic:** Every retrieval for Tier 0/1 must return (Theist) and (Skeptic) to feed the prompt.
-- **Personal Memory:** Peter performs a Cosine Similarity search against the user's `diary` and `notes` to personalize guidance.
-
----
-
-## 4. Optimization & Security
-
-### 4.1 Cost Efficiency Logic
-
-- **Vertex Context Caching:** Peter's "System Instructions" and "Logic Bridge" rules are cached to reduce input token billing by **~90%**.
-- **Tiered Reasoning:** \* **Default:** Gemini 3 Flash.
-- **Complex:** Gemini 1.5 Pro (Only triggered if Tier 2 philosophical density is detected).
-
-### 4.2 Security & Authentication
-
-- **Firebase App Check:** Prevents unauthorized replay attacks on the tRPC endpoints.
-- **Firestore Rules:** Enforce `request.auth.uid == resource.data.userId` for all diary and note collections.
-- **API Security:** All YouVersion API keys and Vertex credentials are stored in **GCP Secret Manager**.
+- **Embeddings:** User diary entries and notes are vectorized upon save via a Cloud Function.
+- **Retrieval:** When the user interacts with Peter, the system performs a **Cosine Similarity** search against the user's specific diary collection to personalize the mentorship.
 
 ---
 
-## 5. Deployment Pipeline (CI/CD)
+## 4. Efficiency & Performance Guardrails
 
-- **Infrastructure as Code:** Automated via GitHub Actions.
-- **WIF (Workload Identity Federation):** Keyless auth to Google Cloud.
-- **Pipeline Steps:**
+### 4.1 Vertex Context Caching
 
-1. `pnpm precheck`: Linting, type-checking, and unit testing (Vitest).
-2. `turbo build`: Incremental build of apps and packages.
-3. `firebase deploy`: Parallel deployment of Hosting (Web) and Functions (Backend).
+- **Implementation:** Peter's "System Instructions" and "Logos Logic Bridge" (~3k tokens) are **Cached** via Vertex AI.
+- **Impact:** Reduces input token costs by **~90%** for active conversation sessions.
+
+### 4.2 Semantic Cache
+
+- **Logic:** A Firestore collection `semantic_cache` stores `hash(query)` $\rightarrow$ `response`.
+- **Benefit:** Frequent theological questions (e.g., "Why does God allow suffering?") are served instantly at $0$ LLM cost.
+
+### 4.3 Hybrid Multi-Model Routing
+
+- **Tier 0/1 (Fact/History):** Handled by **Gemini 3 Flash** for low-latency, high-accuracy retrieval.
+- **Tier 2 (Deep Philosophy):** Automatically escalated to **Gemini 1.5 Pro** if the RAG context exceeds 32k tokens or high-density reasoning is required.
 
 ---
+
+## 5. Security & Deployment (WIF)
+
+- **Auth:** Firebase Authentication (Google/Email).
+- **Access Control:** Firestore Security Rules ensure that personal diary vectors are only searchable by the owner.
+- **CI/CD:** GitHub Actions using **Workload Identity Federation (WIF)**.
+  - `deploy-dev`: Triggered on push to `dev`.
+  - `deploy-main`: Manual production release after staging validation.
