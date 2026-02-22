@@ -14,21 +14,21 @@ export type BibleVersionKey = keyof typeof BIBLE_VERSIONS
 // ─── Input schemas ────────────────────────────────────────────────────────────
 
 export const GetBooksInputSchema = z.object({
-  /** YouVersion version ID. Defaults to ESV (59). */
-  versionId: z.number().int().positive().default(BIBLE_VERSIONS.ESV),
+  /** YouVersion version ID. Defaults to BSB (3034). */
+  versionId: z.number().int().positive().default(BIBLE_VERSIONS.BSB),
 })
 
 export const GetVotdInputSchema = z.object({
-  /** YouVersion version ID. Defaults to ESV (59). */
-  versionId: z.number().int().positive().default(BIBLE_VERSIONS.ESV),
+  /** YouVersion version ID. Defaults to BSB (3034). */
+  versionId: z.number().int().positive().default(BIBLE_VERSIONS.BSB),
 })
 
 export const GetChapterInputSchema = z.object({
   /** USFM book code — e.g. "JHN", "GEN", "1KI" */
   book: z.string().min(2).max(5),
   chapter: z.number().int().min(1),
-  /** YouVersion version ID. Defaults to ESV (59). */
-  versionId: z.number().int().positive().default(BIBLE_VERSIONS.ESV),
+  /** YouVersion version ID. Defaults to BSB (3034). */
+  versionId: z.number().int().positive().default(BIBLE_VERSIONS.BSB),
 })
 
 // ─── Response schemas ─────────────────────────────────────────────────────────
