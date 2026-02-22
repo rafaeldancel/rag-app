@@ -13,7 +13,8 @@ export function App() {
       <AppShell>
         <Routes>
           <Route index element={<TodayPage />} />
-          <Route path="/bible" element={<BiblePage />} />
+          <Route path="/bible/:book/:chapter" element={<BiblePage />} />
+          <Route path="/bible" element={<Navigate to="/bible/JHN/3" replace />} />
           <Route path="/diary" element={<DiaryPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />

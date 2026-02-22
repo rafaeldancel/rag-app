@@ -1,43 +1,185 @@
 import { useState } from 'react'
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { BIBLE_VERSIONS } from '@repo/shared'
 import { ReaderToolbar } from '../components/bible/ReaderToolbar'
+import { ChapterPicker } from '../components/bible/ChapterPicker'
 import { Verse } from '../components/bible/Verse'
-import { InlineAIInsight } from '../components/bible/InlineAIInsight'
+import { Skeleton } from '../components/atoms/Skeleton'
+import { useBibleChapter, useBooks } from '../hooks/useBible'
+import { cn } from '@repo/ui/utils'
+
+// ─── Translation map ───────────────────────────────────────────────────────────
+
+const VERSIONS: Record<string, number> = {
+  BSB: BIBLE_VERSIONS.BSB,
+  NIV: BIBLE_VERSIONS.NIV,
+  WEB: BIBLE_VERSIONS.WEB,
+}
+
+// ─── Skeleton placeholder ──────────────────────────────────────────────────────
+
+function ChapterSkeleton() {
+  const widths = ['w-full', 'w-5/6', 'w-full', 'w-4/6', 'w-full', 'w-5/6', 'w-3/6', 'w-full']
+  return (
+    <div className="px-4 py-4 space-y-3" aria-label="Loading chapter…">
+      {widths.map((w, i) => (
+        <Skeleton key={i} className={`h-4 ${w}`} />
+      ))}
+    </div>
+  )
+}
+
+// ─── Page ──────────────────────────────────────────────────────────────────────
 
 export function BiblePage() {
-  const [selectedVerse, setSelectedVerse] = useState<number | null>(null)
+  const { book = 'JHN', chapter = '3' } = useParams<{ book: string; chapter: string }>()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
 
-  const toggle = (n: number) => setSelectedVerse(v => (v === n ? null : n))
+  const [selectedVerse, setSelectedVerse] = useState<number | null>(null)
+  const [pickerOpen, setPickerOpen] = useState(false)
+
+  const versionKey = searchParams.get('v') ?? 'BSB'
+  const versionId = VERSIONS[versionKey] ?? BIBLE_VERSIONS.BSB
+  const chapterNum = parseInt(chapter)
+
+  const booksQuery = useBooks(versionId)
+  const chapterQuery = useBibleChapter(book, chapterNum, versionId)
+
+  // Find current book metadata to determine chapter bounds
+  const currentBookMeta = booksQuery.data?.find(b => b.usfm === book)
+  const maxChapter = currentBookMeta?.chapterCount ?? 1
+
+  function navigate_to(nextBook: string, nextChapter: number) {
+    const params = versionKey !== 'ESV' ? `?v=${versionKey}` : ''
+    navigate(`/bible/${nextBook}/${nextChapter}${params}`)
+    setSelectedVerse(null)
+  }
+
+  function handleTranslationChange(key: string) {
+    setSearchParams({ v: key }, { replace: true })
+    setSelectedVerse(null)
+  }
+
+  function handlePrev() {
+    if (chapterNum > 1) {
+      navigate_to(book, chapterNum - 1)
+    } else {
+      // Jump to last chapter of the previous book
+      const books = booksQuery.data ?? []
+      const idx = books.findIndex(b => b.usfm === book)
+      if (idx > 0) {
+        const prev = books[idx - 1]
+        navigate_to(prev.usfm, prev.chapterCount)
+      }
+    }
+  }
+
+  function handleNext() {
+    if (chapterNum < maxChapter) {
+      navigate_to(book, chapterNum + 1)
+    } else {
+      // Jump to chapter 1 of the next book
+      const books = booksQuery.data ?? []
+      const idx = books.findIndex(b => b.usfm === book)
+      if (idx >= 0 && idx < books.length - 1) {
+        navigate_to(books[idx + 1].usfm, 1)
+      }
+    }
+  }
+
+  const hasPrev = (() => {
+    if (chapterNum > 1) return true
+    const books = booksQuery.data ?? []
+    return books.findIndex(b => b.usfm === book) > 0
+  })()
+
+  const hasNext = (() => {
+    if (chapterNum < maxChapter) return true
+    const books = booksQuery.data ?? []
+    const idx = books.findIndex(b => b.usfm === book)
+    return idx >= 0 && idx < books.length - 1
+  })()
 
   return (
-    <main className="flex-1 overflow-y-auto scrollbar-none">
-      <ReaderToolbar translation="ESV" chapterLabel="John 3" />
-      <div className="py-2">
-        <Verse
-          number={16}
-          text="For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life."
-          selected={selectedVerse === 16}
-          onPress={() => toggle(16)}
+    <>
+      <main className="flex-1 overflow-y-auto scrollbar-none">
+        <ReaderToolbar
+          translation={versionKey}
+          chapterLabel={chapterQuery.data?.reference ?? `${book} ${chapter}`}
+          versions={Object.keys(VERSIONS)}
+          onTranslationChange={handleTranslationChange}
+          onChapterChange={() => setPickerOpen(true)}
         />
-        <Verse
-          number={17}
-          text="For God did not send his Son into the world to condemn the world, but to save the world through him."
-          selected={selectedVerse === 17}
-          onPress={() => toggle(17)}
-        />
-        <InlineAIInsight text="The Greek word agapao (loved) points to unconditional, covenant love — not mere affection. This is the heart of the Gospel." />
-        <Verse
-          number={18}
-          text="Whoever believes in him is not condemned, but whoever does not believe stands condemned already because they have not believed in the name of God's one and only Son."
-          selected={selectedVerse === 18}
-          onPress={() => toggle(18)}
-        />
-        <Verse
-          number={19}
-          text="This is the verdict: Light has come into the world, but people loved darkness instead of light because their deeds were evil."
-          selected={selectedVerse === 19}
-          onPress={() => toggle(19)}
-        />
-      </div>
-    </main>
+
+        <div className="py-2">
+          {chapterQuery.isLoading && <ChapterSkeleton />}
+
+          {chapterQuery.isError && (
+            <p className="px-4 py-10 text-center text-sm text-muted-foreground">
+              Unable to load this chapter. Please try again.
+            </p>
+          )}
+
+          {chapterQuery.data?.verses.map(verse => (
+            <Verse
+              key={verse.usfm}
+              number={verse.number}
+              text={verse.text}
+              selected={selectedVerse === verse.number}
+              onPress={() => setSelectedVerse(v => (v === verse.number ? null : verse.number))}
+            />
+          ))}
+        </div>
+
+        {/* Required by YouVersion developer terms of service */}
+        {chapterQuery.data?.copyright && (
+          <p className="px-6 py-4 text-center text-[11px] leading-relaxed text-muted-foreground">
+            {chapterQuery.data.copyright}
+          </p>
+        )}
+
+        {/* Prev / Next chapter navigation */}
+        <div className="flex items-center justify-between border-t px-4 py-3">
+          <button
+            onClick={handlePrev}
+            disabled={!hasPrev}
+            className={cn(
+              'flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+              hasPrev
+                ? 'hover:bg-accent text-foreground'
+                : 'text-muted-foreground/40 cursor-not-allowed'
+            )}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Previous
+          </button>
+
+          <button
+            onClick={handleNext}
+            disabled={!hasNext}
+            className={cn(
+              'flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+              hasNext
+                ? 'hover:bg-accent text-foreground'
+                : 'text-muted-foreground/40 cursor-not-allowed'
+            )}
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      </main>
+
+      <ChapterPicker
+        open={pickerOpen}
+        books={booksQuery.data ?? []}
+        currentBook={book}
+        currentChapter={chapterNum}
+        onSelect={(b, ch) => navigate_to(b, ch)}
+        onClose={() => setPickerOpen(false)}
+      />
+    </>
   )
 }

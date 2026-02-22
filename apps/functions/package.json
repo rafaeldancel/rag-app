@@ -2,22 +2,20 @@
   "name": "@repo/functions",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
   "exports": {
-    ".": "./src/index.ts",
+    ".": "./dist/index.js",
     "./router": "./src/trpc/router.ts"
   },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "tsup",
+    "dev": "tsup --watch",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
     "@google/genai": "^1.41.0",
-    "@repo/shared": "workspace:*",
     "@trpc/server": "^11.0.0-rc.660",
     "firebase-admin": "^13.6.1",
     "firebase-functions": "^7.0.5",
@@ -25,9 +23,8 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@repo/config": "workspace:*",
-    "@repo/eslint-config": "workspace:*",
     "eslint": "^8.57.0",
+    "tsup": "^8.5.1",
     "typescript": "5.5.4",
     "vitest": "^2.1.8"
   }

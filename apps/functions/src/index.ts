@@ -1,11 +1,14 @@
 import * as admin from 'firebase-admin'
-import { onCall } from 'firebase-functions/v2/https'
+import { onCall, onRequest } from 'firebase-functions/v2/https'
+import { defineSecret } from 'firebase-functions/params'
+import { fetchRequestHandler } from '@trpc/server/adapters/fetch'
 import { GoogleGenAI } from '@google/genai'
 import { ENV } from './env'
 import { embedTexts } from './embeddings'
 import { findNeighbors } from './vectorSearch'
 import { upsertDatapoints } from './vectorSearch'
 import { chunkText } from './chunking'
+import { appRouter } from './trpc/router'
 
 admin.initializeApp()
 const db = admin.firestore()
@@ -118,3 +121,35 @@ export const ingestFromApi = onCall({ cors: true, region: 'us-central1' }, async
   await upsertDatapoints(datapoints)
   return { docId: docRef.id, chunkCount: chunks.length }
 })
+
+// ─── tRPC HTTP handler ────────────────────────────────────────────────────────
+// Exposes all tRPC procedures at /api/trpc/*.
+// The YOUVERSION_API_KEY secret is injected into process.env by Firebase
+// Secret Manager — set it with: firebase functions:secrets:set YOUVERSION_API_KEY
+
+const youversionApiKey = defineSecret('YOUVERSION_API_KEY')
+
+export const api = onRequest(
+  { cors: true, region: ENV.location, secrets: [youversionApiKey] },
+  async (req, res) => {
+    const host = req.headers.host ?? 'localhost'
+    const url = `${req.protocol}://${host}${req.originalUrl}`
+
+    const fetchReq = new Request(url, {
+      method: req.method,
+      headers: new Headers(req.headers as Record<string, string>),
+      body: req.method === 'GET' || req.method === 'HEAD' ? undefined : JSON.stringify(req.body),
+    })
+
+    const response = await fetchRequestHandler({
+      endpoint: '/api/trpc',
+      req: fetchReq,
+      router: appRouter,
+      createContext: () => ({}),
+    })
+
+    res.status(response.status)
+    response.headers.forEach((value, key) => res.setHeader(key, value))
+    res.end(await response.text())
+  }
+)

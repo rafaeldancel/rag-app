@@ -4,7 +4,8 @@ import { cn } from '@repo/ui/utils'
 interface ReaderToolbarProps {
   translation: string
   chapterLabel: string
-  onTranslationChange?: () => void
+  versions?: string[]
+  onTranslationChange?: (key: string) => void
   onChapterChange?: () => void
   onSearch?: () => void
   onSettings?: () => void
@@ -14,6 +15,7 @@ interface ReaderToolbarProps {
 export function ReaderToolbar({
   translation,
   chapterLabel,
+  versions = ['ESV', 'NIV', 'NASB'],
   onTranslationChange,
   onChapterChange,
   onSearch,
@@ -28,15 +30,23 @@ export function ReaderToolbar({
       )}
     >
       {/* Translation selector */}
-      <button
-        onClick={onTranslationChange}
-        className="flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
-      >
-        {translation}
-        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-      </button>
+      <div className="relative flex items-center">
+        <select
+          value={translation}
+          onChange={e => onTranslationChange?.(e.target.value)}
+          className="appearance-none rounded-md border bg-transparent py-1.5 pl-3 pr-6 text-sm font-medium hover:bg-accent focus:outline-none"
+          aria-label="Bible translation"
+        >
+          {versions.map(v => (
+            <option key={v} value={v}>
+              {v}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-1.5 h-3.5 w-3.5 text-muted-foreground" />
+      </div>
 
-      {/* Chapter selector — centered, flex-1 */}
+      {/* Chapter label — centered, flex-1 */}
       <button
         onClick={onChapterChange}
         className="flex flex-1 items-center justify-center gap-1 rounded-md px-3 py-1.5 text-sm font-semibold hover:bg-accent"
