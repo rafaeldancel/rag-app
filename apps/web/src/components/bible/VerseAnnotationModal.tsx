@@ -40,11 +40,14 @@ const HIGHLIGHT_OPTIONS: HighlightOption[] = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Builds a human-readable verse range label, e.g. "John 3:16–17". */
+/** Builds a human-readable verse label.
+ *  Consecutive → range "John 3:16–17"; non-consecutive → list "John 3:1, 3". */
 function buildLabel(chapterRef: string, verses: SelectedVerse[]) {
   if (verses.length === 0) return chapterRef
   const nums = verses.map(v => v.number).sort((a, b) => a - b)
-  const suffix = nums.length === 1 ? `:${nums[0]}` : `:${nums[0]}–${nums[nums.length - 1]}`
+  if (nums.length === 1) return `${chapterRef}:${nums[0]}`
+  const isConsecutive = nums.every((n, i) => i === 0 || n === nums[i - 1]! + 1)
+  const suffix = isConsecutive ? `:${nums[0]}–${nums[nums.length - 1]}` : `:${nums.join(', ')}`
   return `${chapterRef}${suffix}`
 }
 

@@ -32,12 +32,18 @@ export function Verse({
       className={cn(
         'px-4 py-2 font-serif text-[17px] leading-[1.8] text-foreground',
         'cursor-pointer rounded-md transition-colors',
-        selected ? 'bg-primary/15' : highlightClass || 'hover:bg-muted/60',
+        highlightClass || 'hover:bg-muted/60',
         className
       )}
     >
       <sup className="mr-1 text-[11px] font-bold text-muted-foreground">{number}</sup>
-      {text}
+      <span
+        className={cn(
+          selected && 'underline decoration-dotted decoration-primary underline-offset-4'
+        )}
+      >
+        {text}
+      </span>
     </p>
   )
 }
