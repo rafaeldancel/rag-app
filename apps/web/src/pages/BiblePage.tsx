@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { BIBLE_VERSIONS } from '@repo/shared'
@@ -42,6 +42,14 @@ export function BiblePage() {
   const versionKey = searchParams.get('v') ?? 'NIV'
   const versionId = VERSIONS[versionKey] ?? BIBLE_VERSIONS.NIV
   const chapterNum = parseInt(chapter)
+
+  // Persist last read position so returning to /bible resumes here
+  useEffect(() => {
+    localStorage.setItem(
+      'bible.lastPosition',
+      JSON.stringify({ book, chapter: chapterNum, version: versionKey })
+    )
+  }, [book, chapterNum, versionKey])
 
   const booksQuery = useBooks(versionId)
   const chapterQuery = useBibleChapter(book, chapterNum, versionId)
