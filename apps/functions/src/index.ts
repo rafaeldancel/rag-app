@@ -14,10 +14,7 @@ admin.initializeApp()
 const db = admin.firestore()
 
 function vertexClient() {
-  process.env.GOOGLE_GENAI_USE_VERTEXAI = 'true'
-  process.env.GOOGLE_CLOUD_PROJECT = ENV.projectId
-  process.env.GOOGLE_CLOUD_LOCATION = ENV.location
-  return new GoogleGenAI({})
+  return new GoogleGenAI({ vertexai: true, project: ENV.projectId, location: ENV.location })
 }
 
 export const chat = onCall({ cors: true, region: ENV.location }, async req => {

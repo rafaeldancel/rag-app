@@ -216,7 +216,8 @@ function parseVerses(html: string, book: string, chapter: number): BibleVerse[] 
 
 /** Authenticated fetch wrapper for the YouVersion Platform API. */
 async function youversionFetch(path: string): Promise<unknown> {
-  const res = await fetch(`${YOUVERSION_BASE}${path}`, {
+  const url = `${YOUVERSION_BASE}${path}`
+  const res = await fetch(url, {
     headers: {
       'x-yvp-app-key': getApiKey(),
       Accept: 'application/json',
@@ -224,9 +225,11 @@ async function youversionFetch(path: string): Promise<unknown> {
   })
 
   if (!res.ok) {
+    const body = await res.text().catch(() => '(unreadable)')
+    console.error(`[YouVersion] ${res.status} ${url}\nBody: ${body}`)
     throw new TRPCError({
       code: res.status === 404 ? 'NOT_FOUND' : 'INTERNAL_SERVER_ERROR',
-      message: `YouVersion API responded with ${res.status}.`,
+      message: `YouVersion API responded with ${res.status}: ${body}`,
     })
   }
 
@@ -343,11 +346,7 @@ export const bibleRouter = router({
         .replace(/\s+/g, ' ')
         .trim()
 
-      process.env.GOOGLE_GENAI_USE_VERTEXAI = 'true'
-      process.env.GOOGLE_CLOUD_PROJECT = ENV.projectId
-      process.env.GOOGLE_CLOUD_LOCATION = ENV.location
-
-      const ai = new GoogleGenAI({})
+      const ai = new GoogleGenAI({ vertexai: true, project: ENV.projectId, location: ENV.location })
       const prompt = [
         `Scripture: "${verseText}" — ${reference}`,
         '',

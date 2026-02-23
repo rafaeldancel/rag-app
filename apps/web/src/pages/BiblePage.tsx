@@ -12,9 +12,8 @@ import { cn } from '@repo/ui/utils'
 // ─── Translation map ───────────────────────────────────────────────────────────
 
 const VERSIONS: Record<string, number> = {
-  BSB: BIBLE_VERSIONS.BSB,
   NIV: BIBLE_VERSIONS.NIV,
-  WEB: BIBLE_VERSIONS.WEB,
+  ASD: BIBLE_VERSIONS.ASD,
 }
 
 // ─── Skeleton placeholder ──────────────────────────────────────────────────────
@@ -40,8 +39,8 @@ export function BiblePage() {
   const [selectedVerse, setSelectedVerse] = useState<number | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
 
-  const versionKey = searchParams.get('v') ?? 'BSB'
-  const versionId = VERSIONS[versionKey] ?? BIBLE_VERSIONS.BSB
+  const versionKey = searchParams.get('v') ?? 'NIV'
+  const versionId = VERSIONS[versionKey] ?? BIBLE_VERSIONS.NIV
   const chapterNum = parseInt(chapter)
 
   const booksQuery = useBooks(versionId)

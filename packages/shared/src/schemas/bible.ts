@@ -4,9 +4,8 @@ import { z } from 'zod'
 
 /** YouVersion version IDs for the translations the app supports. */
 export const BIBLE_VERSIONS = {
-  BSB: 3034, // Berean Standard Bible — modern, free
   NIV: 111, // New International Version 2011
-  WEB: 206, // World English Bible — public domain
+  ASD: 1264, // Ang Salita ng Diyos — Tagalog Contemporary Bible
 } as const
 
 export type BibleVersionKey = keyof typeof BIBLE_VERSIONS
@@ -14,21 +13,21 @@ export type BibleVersionKey = keyof typeof BIBLE_VERSIONS
 // ─── Input schemas ────────────────────────────────────────────────────────────
 
 export const GetBooksInputSchema = z.object({
-  /** YouVersion version ID. Defaults to BSB (3034). */
-  versionId: z.number().int().positive().default(BIBLE_VERSIONS.BSB),
+  /** YouVersion version ID. Defaults to NIV (111). */
+  versionId: z.number().int().positive().default(BIBLE_VERSIONS.NIV),
 })
 
 export const GetVotdInputSchema = z.object({
-  /** YouVersion version ID. Defaults to BSB (3034). */
-  versionId: z.number().int().positive().default(BIBLE_VERSIONS.BSB),
+  /** YouVersion version ID. Defaults to NIV (111). */
+  versionId: z.number().int().positive().default(BIBLE_VERSIONS.NIV),
 })
 
 export const GetChapterInputSchema = z.object({
   /** USFM book code — e.g. "JHN", "GEN", "1KI" */
   book: z.string().min(2).max(5),
   chapter: z.number().int().min(1),
-  /** YouVersion version ID. Defaults to BSB (3034). */
-  versionId: z.number().int().positive().default(BIBLE_VERSIONS.BSB),
+  /** YouVersion version ID. Defaults to NIV (111). */
+  versionId: z.number().int().positive().default(BIBLE_VERSIONS.NIV),
 })
 
 // ─── Response schemas ─────────────────────────────────────────────────────────
