@@ -1,26 +1,27 @@
-import { useState } from 'react'
-import { BookOpen, Flame, Clock, Star, Users, Award } from 'lucide-react'
-import { Bell, Moon, Shield, HelpCircle } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { BookOpen, Flame, PenLine } from 'lucide-react'
+import { Moon, Shield, HelpCircle } from 'lucide-react'
 import { UserHeader } from '../components/profile/UserHeader'
 import { StatsGrid } from '../components/profile/StatsGrid'
 import { SettingsGroup } from '../components/profile/SettingsGroup'
 
 const STATS = [
-  { value: 14, label: 'Day Streak', icon: Flame },
+  { value: 21, label: 'Longest Streak', icon: Flame },
   { value: 87, label: 'Chapters', icon: BookOpen },
-  { value: '2h', label: 'This Week', icon: Clock },
-  { value: 12, label: 'Favorites', icon: Star },
-  { value: 3, label: 'Mentors', icon: Users },
-  { value: 'Gold', label: 'Badge', icon: Award },
+  { value: 5, label: 'Diary Entries', icon: PenLine },
 ]
 
 export function ProfilePage() {
-  const [notifications, setNotifications] = useState(true)
-  const [darkMode, setDarkMode] = useState(false)
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('darkMode') === 'true')
+
+  // Keep the document class in sync with state (also applies on mount)
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', darkMode)
+  }, [darkMode])
 
   const handleDarkMode = (val: boolean) => {
     setDarkMode(val)
-    document.documentElement.classList.toggle('dark', val)
+    localStorage.setItem('darkMode', String(val))
   }
 
   return (
@@ -30,13 +31,6 @@ export function ProfilePage() {
       <SettingsGroup
         title="Preferences"
         rows={[
-          {
-            icon: Bell,
-            label: 'Notifications',
-            type: 'toggle',
-            value: notifications,
-            onToggle: setNotifications,
-          },
           {
             icon: Moon,
             label: 'Dark Mode',
