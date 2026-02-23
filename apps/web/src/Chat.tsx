@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { chatCallable } from './firebase'
+import { chatCallable, authReady } from './firebase'
 
 type Msg = { role: 'user' | 'assistant'; text: string }
 
@@ -15,6 +15,7 @@ export function Chat() {
     setInput('')
     setLoading(true)
     try {
+      await authReady
       const resp = await chatCallable({ question: q })
       const data = resp.data as { answer?: string }
       setMessages(m => [...m, { role: 'assistant', text: data.answer ?? '(no response)' }])

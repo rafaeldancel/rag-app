@@ -2,84 +2,39 @@ import * as admin from 'firebase-admin'
 import { onCall, onRequest } from 'firebase-functions/v2/https'
 import { defineSecret } from 'firebase-functions/params'
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch'
-import { GoogleGenAI } from '@google/genai'
 import { ENV } from './env'
 import { embedTexts } from './embeddings'
-import { findNeighbors } from './vectorSearch'
-import { upsertDatapoints } from './vectorSearch'
+import { batchStoreChunks } from './firestoreSearch'
 import { chunkText } from './chunking'
+import { ragQuery, type PromptProfile } from './rag'
 import { appRouter } from './trpc/router'
 
 admin.initializeApp()
 const db = admin.firestore()
 
-function vertexClient() {
-  return new GoogleGenAI({ vertexai: true, project: ENV.projectId, location: ENV.location })
-}
+// ── Chat (RAG Pipeline) ───────────────────────────────────────────
 
-export const chat = onCall({ cors: true, region: ENV.location }, async req => {
+export const chat = onCall({ cors: true, region: ENV.location }, async (req) => {
   const question = String(req.data?.question || '').trim()
+  const profile = (req.data?.profile as PromptProfile) || 'bible-study'
+
   if (!question) throw new Error('Missing question')
 
-  const [qVec] = await embedTexts([question])
-  const neighbors = await findNeighbors(qVec, 8)
-
-  const chunkRefs = neighbors
-    .map((n: { datapoint?: { datapointId?: string } }) => n.datapoint?.datapointId)
-    .filter(Boolean)
-  const chunks: Array<{ id: string; text: string; sourceUri?: string; title?: string }> = []
-
-  for (const id of chunkRefs) {
-    const [docId, chunkId] = String(id).split('_', 2)
-    const snap = await db.doc(`docs/${docId}/chunks/${chunkId}`).get()
-    if (!snap.exists) continue
-    const chunk = snap.data() as {
-      text: string
-      vectorDatapointId?: string
-      tokenCountApprox?: number
-    }
-    const docSnap = await db.doc(`docs/${docId}`).get()
-    const doc = docSnap.data() as { sourceUri?: string; title?: string }
-    chunks.push({ id, text: chunk.text, sourceUri: doc?.sourceUri, title: doc?.title })
-  }
-
-  const ai = vertexClient()
-  const contextBlock = chunks
-    .slice(0, 6)
-    .map(
-      (c, i) =>
-        `SOURCE ${i + 1}\nTitle: ${c.title || 'Untitled'}\nURI: ${c.sourceUri || 'unknown'}\nText:\n${c.text}`
-    )
-    .join('\n\n---\n\n')
-
-  const system = `You are a helpful assistant. Answer using ONLY the provided sources when possible.
-If sources are insufficient, say what is missing and suggest what to ingest next.
-Always include a "Sources" section that lists which SOURCE numbers you used.`
-
-  const resp = await ai.models.generateContent({
-    model: ENV.chatModel,
-    contents: [
-      {
-        role: 'user',
-        parts: [
-          { text: `SYSTEM:\n${system}\n\nCONTEXT:\n${contextBlock}\n\nQUESTION:\n${question}` },
-        ],
-      },
-    ],
-  })
+  const result = await ragQuery({ question, profile })
 
   return {
-    answer: resp.text ?? '',
-    sources: chunks.map((c, i) => ({
-      sourceNo: i + 1,
-      title: c.title,
-      uri: c.sourceUri,
-      datapointId: c.id,
-    })),
+    answer: result.answer,
+    sources: result.sources,
+    profile: result.profile,
+    chunksRetrieved: result.chunksRetrieved,
   }
 })
 
-export const ingestFromApi = onCall({ cors: true, region: 'us-central1' }, async req => {
+// ── Ingest from URL ────────────────────────────────────────────────
+
+export const ingestFromApi = onCall({ cors: true, region: 'us-central1' }, async (req) => {
+  if (!req.auth) throw new Error('Unauthorized - must be logged in')
+
   const url = String(req.data?.url || '')
   if (!url) throw new Error('Missing url')
 
@@ -97,32 +52,20 @@ export const ingestFromApi = onCall({ cors: true, region: 'us-central1' }, async
 
   const chunks = chunkText(raw)
   const vectors = await embedTexts(chunks)
-  const batch = db.batch()
 
-  const datapoints = chunks.map((text, i) => {
-    const chunkId = String(i).padStart(4, '0')
-    const datapointId = `${docRef.id}_${chunkId}`
-    batch.set(docRef.collection('chunks').doc(chunkId), {
-      text,
-      vectorDatapointId: datapointId,
-      tokenCountApprox: Math.ceil(text.length / 4),
-    })
-    return {
-      datapointId,
-      featureVector: vectors[i],
-      restricts: [{ namespace: 'docId', allowList: [docRef.id] }],
-    }
-  })
+  await batchStoreChunks(
+    docRef.id,
+    chunks.map((text: string, i: number) => ({ text, vector: vectors[i] }))
+  )
 
-  await batch.commit()
-  await upsertDatapoints(datapoints)
   return { docId: docRef.id, chunkCount: chunks.length }
 })
 
-// ─── tRPC HTTP handler ────────────────────────────────────────────────────────
-// Exposes all tRPC procedures at /api/trpc/*.
-// The YOUVERSION_API_KEY secret is injected into process.env by Firebase
-// Secret Manager — set it with: firebase functions:secrets:set YOUVERSION_API_KEY
+// ── Ingest from Cloud Storage ──────────────────────────────────────
+
+export { ingestFromGcs } from './gcsIngest'
+
+// ── tRPC HTTP handler ──────────────────────────────────────────────
 
 const youversionApiKey = defineSecret('YOUVERSION_API_KEY')
 
