@@ -1,4 +1,5 @@
 import { initializeApp } from 'firebase/app'
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth'
 import { getFunctions, httpsCallable } from 'firebase/functions'
 
 const firebaseConfig = {
@@ -11,6 +12,17 @@ const firebaseConfig = {
 }
 
 export const app = initializeApp(firebaseConfig)
+export const auth = getAuth(app)
 export const functions = getFunctions(app)
 export const chatCallable = httpsCallable(functions, 'chat')
 export const ingestCallable = httpsCallable(functions, 'ingestFromApi')
+
+export const authReady = new Promise<void>(resolve => {
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      resolve()
+    } else {
+      signInAnonymously(auth).then(() => resolve())
+    }
+  })
+})
