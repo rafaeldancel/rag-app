@@ -1,9 +1,8 @@
 import { useNavigate } from 'react-router-dom'
-import { Droplets, Moon } from 'lucide-react'
+import { BookOpen, ChevronRight } from 'lucide-react'
 import { StreakHeader } from '../components/today/StreakHeader'
 import { DailyVerseCard } from '../components/today/DailyVerseCard'
 import { DailyPrayerCard } from '../components/today/DailyPrayerCard'
-import { LifestyleActionCard } from '../components/today/LifestyleActionCard'
 import { Skeleton } from '../components/atoms/Skeleton'
 import { useVotd, useDailyPrayer } from '../hooks/useBible'
 
@@ -32,10 +31,40 @@ export function TodayPage() {
     day: 'numeric',
   })
 
+  const lastPosition = (() => {
+    try {
+      const saved = localStorage.getItem('bible.lastPosition')
+      if (saved)
+        return JSON.parse(saved) as {
+          book: string
+          chapter: number
+          version?: string
+          reference?: string
+        }
+    } catch {
+      // ignore malformed storage
+    }
+    return null
+  })()
+
   function handleReadChapter() {
     if (!votd.data) return
     navigate(`/bible/${votd.data.book}/${votd.data.chapter}`)
   }
+
+  function handleContinueReading() {
+    if (!lastPosition) {
+      navigate('/bible/JHN/3')
+      return
+    }
+    const query =
+      lastPosition.version && lastPosition.version !== 'NIV' ? `?v=${lastPosition.version}` : ''
+    navigate(`/bible/${lastPosition.book}/${lastPosition.chapter}${query}`)
+  }
+
+  const readingLabel =
+    lastPosition?.reference ??
+    (lastPosition ? `${lastPosition.book} ${lastPosition.chapter}` : 'John 3')
 
   return (
     <main className="flex-1 overflow-y-auto scrollbar-none space-y-4 pb-4">
@@ -59,20 +88,19 @@ export function TodayPage() {
         isLoading={prayer.isLoading}
       />
 
-      <LifestyleActionCard
-        icon={Droplets}
-        title="Morning Prayer"
-        subtitle="5 minutes of quiet time"
-        completed={false}
-      />
-      <LifestyleActionCard
-        icon={Moon}
-        iconBg="bg-purple-100 dark:bg-purple-900/30"
-        iconColor="text-purple-600 dark:text-purple-400"
-        title="Evening Reflection"
-        subtitle="Review today's reading"
-        completed={true}
-      />
+      <button
+        onClick={handleContinueReading}
+        className="mx-4 flex w-[calc(100%-2rem)] items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-soft text-left"
+      >
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+          <BookOpen className="h-5 w-5 text-primary" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-foreground">Continue Reading</p>
+          <p className="truncate text-xs text-muted-foreground">{readingLabel}</p>
+        </div>
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+      </button>
     </main>
   )
 }

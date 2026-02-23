@@ -43,16 +43,21 @@ export function BiblePage() {
   const versionId = VERSIONS[versionKey] ?? BIBLE_VERSIONS.NIV
   const chapterNum = parseInt(chapter)
 
+  const booksQuery = useBooks(versionId)
+  const chapterQuery = useBibleChapter(book, chapterNum, versionId)
+
   // Persist last read position so returning to /bible resumes here
   useEffect(() => {
     localStorage.setItem(
       'bible.lastPosition',
-      JSON.stringify({ book, chapter: chapterNum, version: versionKey })
+      JSON.stringify({
+        book,
+        chapter: chapterNum,
+        version: versionKey,
+        reference: chapterQuery.data?.reference,
+      })
     )
-  }, [book, chapterNum, versionKey])
-
-  const booksQuery = useBooks(versionId)
-  const chapterQuery = useBibleChapter(book, chapterNum, versionId)
+  }, [book, chapterNum, versionKey, chapterQuery.data?.reference])
 
   // Find current book metadata to determine chapter bounds
   const currentBookMeta = booksQuery.data?.find(b => b.usfm === book)

@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AppShell } from './components/layout/AppShell'
 import { BottomNav } from './components/layout/BottomNav'
+import { AIModal } from './components/layout/AIModal'
 import { TodayPage } from './pages/TodayPage'
 import { BiblePage } from './pages/BiblePage'
 import { DiaryPage } from './pages/DiaryPage'
@@ -22,6 +24,8 @@ function BibleRedirect() {
 }
 
 export function App() {
+  const [aiOpen, setAiOpen] = useState(false)
+
   return (
     <BrowserRouter>
       <AppShell>
@@ -34,7 +38,8 @@ export function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
 
-        <BottomNav />
+        <AIModal open={aiOpen} onClose={() => setAiOpen(false)} />
+        <BottomNav onAIPress={() => setAiOpen(true)} />
       </AppShell>
     </BrowserRouter>
   )
