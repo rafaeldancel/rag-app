@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AppShell } from './components/layout/AppShell'
 import { BottomNav } from './components/layout/BottomNav'
 import { AIModal } from './components/layout/AIModal'
+import { AIModalContext } from './lib/AIModalContext'
 import { TodayPage } from './pages/TodayPage'
 import { BiblePage } from './pages/BiblePage'
 import { DiaryPage } from './pages/DiaryPage'
@@ -25,22 +26,37 @@ function BibleRedirect() {
 
 export function App() {
   const [aiOpen, setAiOpen] = useState(false)
+  const [aiPrefill, setAiPrefill] = useState('')
+
+  function openAI(prefill = '') {
+    setAiPrefill(prefill)
+    setAiOpen(true)
+  }
 
   return (
-    <BrowserRouter>
-      <AppShell>
-        <Routes>
-          <Route index element={<TodayPage />} />
-          <Route path="/bible/:book/:chapter" element={<BiblePage />} />
-          <Route path="/bible" element={<BibleRedirect />} />
-          <Route path="/diary" element={<DiaryPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+    <AIModalContext.Provider value={{ openAI }}>
+      <BrowserRouter>
+        <AppShell>
+          <Routes>
+            <Route index element={<TodayPage />} />
+            <Route path="/bible/:book/:chapter" element={<BiblePage />} />
+            <Route path="/bible" element={<BibleRedirect />} />
+            <Route path="/diary" element={<DiaryPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
 
-        <AIModal open={aiOpen} onClose={() => setAiOpen(false)} />
-        <BottomNav onAIPress={() => setAiOpen(true)} />
-      </AppShell>
-    </BrowserRouter>
+          <AIModal
+            open={aiOpen}
+            onClose={() => {
+              setAiOpen(false)
+              setAiPrefill('')
+            }}
+            initialInput={aiPrefill}
+          />
+          <BottomNav onAIPress={() => openAI()} />
+        </AppShell>
+      </BrowserRouter>
+    </AIModalContext.Provider>
   )
 }

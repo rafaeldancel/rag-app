@@ -23,3 +23,33 @@ export type {
   Votd,
   DailyPrayer,
 } from './bible'
+
+export {
+  ListDiaryEntriesInputSchema,
+  CreateDiaryEntryInputSchema,
+  UpdateDiaryEntryInputSchema,
+  DeleteDiaryEntryInputSchema,
+  AIInsightSchema,
+  DiaryEntrySchema,
+} from './diary'
+export type {
+  ListDiaryEntriesInput,
+  CreateDiaryEntryInput,
+  UpdateDiaryEntryInput,
+  DeleteDiaryEntryInput,
+  AIInsight,
+  DiaryEntry,
+} from './diary'
+
+export {
+  HighlightColorSchema,
+  UpsertAnnotationInputSchema,
+  GetAnnotationsInputSchema,
+  AnnotationSchema,
+} from './annotations'
+export type {
+  HighlightColor,
+  UpsertAnnotationInput,
+  GetAnnotationsInput,
+  Annotation,
+} from './annotations'

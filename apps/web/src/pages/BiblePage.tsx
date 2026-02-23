@@ -5,9 +5,13 @@ import { BIBLE_VERSIONS } from '@repo/shared'
 import { ReaderToolbar } from '../components/bible/ReaderToolbar'
 import { ChapterPicker } from '../components/bible/ChapterPicker'
 import { Verse } from '../components/bible/Verse'
+import { VerseAnnotationModal } from '../components/bible/VerseAnnotationModal'
 import { Skeleton } from '../components/atoms/Skeleton'
 import { useBibleChapter, useBooks } from '../hooks/useBible'
+import { useChapterAnnotations, useUpsertAnnotation } from '../hooks/useAnnotations'
+import { useAIModal } from '../lib/AIModalContext'
 import { cn } from '@repo/ui/utils'
+import type { HighlightColor } from '@repo/shared'
 
 // ─── Translation map ───────────────────────────────────────────────────────────
 
@@ -35,9 +39,13 @@ export function BiblePage() {
   const { book = 'JHN', chapter = '3' } = useParams<{ book: string; chapter: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
+  const { openAI } = useAIModal()
 
-  const [selectedVerse, setSelectedVerse] = useState<number | null>(null)
+  const [selectedVerses, setSelectedVerses] = useState<Set<number>>(new Set())
   const [pickerOpen, setPickerOpen] = useState(false)
+
+  // Modal opens automatically as soon as any verse is selected
+  const annotationOpen = selectedVerses.size > 0
 
   const versionKey = searchParams.get('v') ?? 'NIV'
   const versionId = VERSIONS[versionKey] ?? BIBLE_VERSIONS.NIV
@@ -45,6 +53,11 @@ export function BiblePage() {
 
   const booksQuery = useBooks(versionId)
   const chapterQuery = useBibleChapter(book, chapterNum, versionId)
+  const annotationsQuery = useChapterAnnotations(book, chapterNum)
+  const upsertAnnotation = useUpsertAnnotation()
+
+  // Build lookup: USFM → annotation
+  const annotationMap = Object.fromEntries((annotationsQuery.data ?? []).map(a => [a.usfm, a]))
 
   // Persist last read position so returning to /bible resumes here
   useEffect(() => {
@@ -59,6 +72,11 @@ export function BiblePage() {
     )
   }, [book, chapterNum, versionKey, chapterQuery.data?.reference])
 
+  // Clear selection when chapter changes
+  useEffect(() => {
+    setSelectedVerses(new Set())
+  }, [book, chapterNum])
+
   // Find current book metadata to determine chapter bounds
   const currentBookMeta = booksQuery.data?.find(b => b.usfm === book)
   const maxChapter = currentBookMeta?.chapterCount ?? 1
@@ -66,19 +84,18 @@ export function BiblePage() {
   function navigate_to(nextBook: string, nextChapter: number) {
     const params = versionKey !== 'ESV' ? `?v=${versionKey}` : ''
     navigate(`/bible/${nextBook}/${nextChapter}${params}`)
-    setSelectedVerse(null)
+    setSelectedVerses(new Set())
   }
 
   function handleTranslationChange(key: string) {
     setSearchParams({ v: key }, { replace: true })
-    setSelectedVerse(null)
+    setSelectedVerses(new Set())
   }
 
   function handlePrev() {
     if (chapterNum > 1) {
       navigate_to(book, chapterNum - 1)
     } else {
-      // Jump to last chapter of the previous book
       const books = booksQuery.data ?? []
       const idx = books.findIndex(b => b.usfm === book)
       if (idx > 0) {
@@ -92,13 +109,24 @@ export function BiblePage() {
     if (chapterNum < maxChapter) {
       navigate_to(book, chapterNum + 1)
     } else {
-      // Jump to chapter 1 of the next book
       const books = booksQuery.data ?? []
       const idx = books.findIndex(b => b.usfm === book)
       if (idx >= 0 && idx < books.length - 1) {
         navigate_to(books[idx + 1].usfm, 1)
       }
     }
+  }
+
+  function toggleVerse(num: number) {
+    setSelectedVerses(prev => {
+      const next = new Set(prev)
+      if (next.has(num)) {
+        next.delete(num)
+      } else {
+        next.add(num)
+      }
+      return next
+    })
   }
 
   const hasPrev = (() => {
@@ -113,6 +141,30 @@ export function BiblePage() {
     const idx = books.findIndex(b => b.usfm === book)
     return idx >= 0 && idx < books.length - 1
   })()
+
+  // Selected verse objects for the annotation modal
+  const selectedVerseObjects = (chapterQuery.data?.verses ?? [])
+    .filter(v => selectedVerses.has(v.number))
+    .map(v => ({ number: v.number, text: v.text, usfm: v.usfm }))
+
+  // For single-verse selection, pre-fill existing annotation
+  const firstUsfm = selectedVerseObjects[0]?.usfm
+  const existingAnnotation =
+    selectedVerseObjects.length === 1 && firstUsfm ? annotationMap[firstUsfm] : undefined
+
+  async function handleAnnotationSave(highlight: HighlightColor, note: string) {
+    await Promise.all(
+      selectedVerseObjects.map(v =>
+        upsertAnnotation.mutateAsync({ userId: 'guest', usfm: v.usfm, highlight, note })
+      )
+    )
+    setSelectedVerses(new Set())
+  }
+
+  function handleAskAI(prefill: string) {
+    setSelectedVerses(new Set())
+    openAI(prefill)
+  }
 
   return (
     <>
@@ -139,8 +191,9 @@ export function BiblePage() {
               key={verse.usfm}
               number={verse.number}
               text={verse.text}
-              selected={selectedVerse === verse.number}
-              onPress={() => setSelectedVerse(v => (v === verse.number ? null : verse.number))}
+              selected={selectedVerses.has(verse.number)}
+              highlightColor={annotationMap[verse.usfm]?.highlight ?? null}
+              onPress={() => toggleVerse(verse.number)}
             />
           ))}
         </div>
@@ -183,6 +236,17 @@ export function BiblePage() {
           </button>
         </div>
       </main>
+
+      <VerseAnnotationModal
+        open={annotationOpen}
+        verses={selectedVerseObjects}
+        chapterRef={chapterQuery.data?.reference ?? `${book} ${chapterNum}`}
+        existingAnnotation={existingAnnotation}
+        isSaving={upsertAnnotation.isPending}
+        onClose={() => setSelectedVerses(new Set())}
+        onSave={handleAnnotationSave}
+        onAskAI={handleAskAI}
+      />
 
       <ChapterPicker
         open={pickerOpen}

@@ -26,22 +26,24 @@ const MOCK_RESPONSE = `John 3:16 is often called the heart of the Gospel. It rev
 interface AIModalProps {
   open: boolean
   onClose: () => void
+  initialInput?: string
 }
 
-export function AIModal({ open, onClose }: AIModalProps) {
+export function AIModal({ open, onClose, initialInput }: AIModalProps) {
   const [chatState, setChatState] = useState<ChatState>('idle')
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  // Reset when modal closes
+  // Reset when modal closes; seed input when it opens
   useEffect(() => {
     if (!open) {
       setChatState('idle')
       setMessages([])
       setInput('')
     } else {
+      setInput(initialInput ?? '')
       setTimeout(() => inputRef.current?.focus(), 100)
     }
   }, [open])
