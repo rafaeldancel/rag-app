@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { X, Send, Sparkles } from 'lucide-react'
 import { cn } from '@repo/ui/utils'
+import { chatCallable, authReady } from '../../firebase'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -18,8 +19,6 @@ const SUGGESTED_PROMPTS = [
   'Help me understand grace',
   'A prayer for when I feel anxious',
 ]
-
-const MOCK_RESPONSE = `John 3:16 is often called the heart of the Gospel. It reveals three truths: God's nature (He loves), God's gift (His Son), and God's promise (eternal life for those who believe). The Greek word for "world" here is *kosmos* — not a select group, but all of humanity. It's an invitation, not a statement.`
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -53,7 +52,7 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, chatState])
 
-  function handleSend() {
+  async function handleSend() {
     const text = input.trim()
     if (!text || chatState === 'loading') return
 
@@ -61,11 +60,23 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
     setInput('')
     setChatState('loading')
 
-    // Simulate AI response — replace with real call later
-    setTimeout(() => {
-      setMessages(prev => [...prev, { role: 'assistant', text: MOCK_RESPONSE }])
+    try {
+      await authReady
+      const resp = await chatCallable({ question: text, profile: 'bible-study' })
+      const data = resp.data as { answer?: string }
+      setMessages(prev => [
+        ...prev,
+        { role: 'assistant', text: data.answer ?? '(no response)' },
+      ])
       setChatState('answered')
-    }, 1500)
+    } catch (e) {
+      console.error('Chat error:', e)
+      setMessages(prev => [
+        ...prev,
+        { role: 'assistant', text: 'Something went wrong. Please try again.' },
+      ])
+      setChatState('error')
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
