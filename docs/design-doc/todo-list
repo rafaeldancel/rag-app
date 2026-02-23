@@ -1,0 +1,98 @@
+# To Do List
+
+This is the final, high-fidelity **Logos Implementation Roadmap**. It is architected to prioritize the **"Brain" (The Bible RAG)** and the **"Heart" (Peter's Logic)** before building out the UI layers.
+
+---
+
+### Phase 0: The Infrastructure (Foundation)
+
+_Goal: Establish the Monorepo and secure the GCP/Firebase environment._
+
+- [ ] **Scaffold Monorepo:**
+  - [ ] Initialize Turborepo with `pnpm`.
+  - [ ] Setup `apps/web` (React/Vite) and `apps/functions` (tRPC/Firebase Functions v2).
+  - [ ] Setup `@repo/shared` for Zod schemas (Audit, Diary, Metadata tags).
+- [ ] **GCP & Firebase Initialization:**
+  - [ ] Create a Firebase project and upgrade to the **Blaze Plan**.
+  - [ ] Enable **Firestore** (Native Mode), **Vertex AI**, and **Secret Manager**.
+- [ ] **CI/CD Pipeline:**
+  - [ ] Run `scripts/setup-wif.sh` to configure **Workload Identity Federation**.
+  - [ ] Add `GCP_WORKLOAD_IDENTITY_PROVIDER` and `GCP_SA_EMAIL` to GitHub Secrets.
+  - [ ] Verify automated deployment of a hello-world tRPC procedure to Firebase.
+
+---
+
+### Phase 1: The Knowledge Engine (The Primary Sources)
+
+_Goal: Vectorize the Whole Bible and the Distilled Courtroom Library._
+
+- [ ] **Bible Vectorization:**
+  - [ ] Source a clean JSON/CSV of the Bible (NASB/ESV).
+  - [ ] Write a script to generate embeddings for all **31,102 verses** using `text-multilingual-embedding-002`.
+  - [ ] Batch-upload to Firestore `bible_verses` and create a **Vector Index** (Distance: `DOT_PRODUCT`).
+- [ ] **Cliffe Transcript Distillation:**
+  - [ ] Process 50 transcripts into "Atomic Q&A Units" (metadata: `stance`, `tier`, `logic_type`).
+- [ ] **The "Steel Man" RAG Prep:**
+  - [ ] Upload the Distilled Knowledge Base (Blomberg, Ehrman, etc.) to **Vertex AI Search**.
+- [ ] **YouVersion Integration:**
+  - [ ] Build the server-side proxy in `apps/functions` to fetch Scripture for the live Reader UI.
+
+---
+
+### Phase 2: Peter’s Reasoning (The Logic Bridge)
+
+_Goal: Implement the "Mentor" backend with strict cost-efficiency._
+
+- [ ] **System Instruction & Caching:**
+  - [ ] Draft the "Peter" persona instructions in `apps/functions`.
+  - [ ] Implement **Vertex Context Caching** to reduce input costs by ~90%.
+- [ ] **Semantic Cache Layer:**
+  - [ ] Create the `semantic_cache` Firestore collection and the lookup logic.
+- [ ] **The Balanced RAG Pipeline:**
+  - [ ] Build the `peter.ask` tRPC procedure.
+  - [ ] Implement **Two-Stage Retrieval**: Pull 2-3 Verses + 1 Theist Node + 1 Skeptic Node.
+  - [ ] Add the "Out-of-Scope" handler (bridging medical/legal queries back to the app context).
+
+---
+
+### Phase 3: The Interaction (Frontend & Action Modal)
+
+_Goal: Build the user-facing Bible reader and the Peter chat experience._
+
+- [ ] **3-Axis Audit UI:**
+  - [ ] Build the sliding scale sliders using Shadcn UI.
+  - [ ] Implement the "Post-Audit" Topic Suggestion logic.
+- [ ] **Professional Reader Suite:**
+  - [ ] Build the Scripture viewer with translation switching.
+  - [ ] Implement the **Peter Action Modal** (Highlight, Note, Ask Peter).
+- [ ] **Mentor Chat UI:**
+  - [ ] Build the streaming chat interface with citation icons.
+  - [ ] Implement the **"Grounding Switch" (Clash View)** to show the theist/skeptic nodes used.
+
+---
+
+### Phase 4: Personalization & Habit Forming
+
+_Goal: Implement long-term memory and visual progress tracking._
+
+- [ ] **Vectorized Diary Memory:**
+  - [ ] Add a Firestore trigger to embed new diary entries into the user's `personal_memory` collection.
+  - [ ] Integrate this memory into the `peter.ask` prompt for personalized care.
+- [ ] **Dual-Depth Diary Insights:**
+  - [ ] Implement the "Immediate Insight" (single entry) and "Aggregate Insight" (global trend) triggers.
+- [ ] **The Constellation Map:**
+  - [ ] Build the non-linear map to visualize "Discovered Topics" and "Engagement Streaks."
+  - [ ] Build the **"Today" Section** with user-controlled visibility toggles.
+
+---
+
+### Phase 5: Hardening & Security
+
+_Goal: Ensure data privacy and cost-safety._
+
+- [ ] **Firestore Security Rules:**
+  - [ ] Deploy strict rules ensuring only the `request.auth.uid` can access their diary and personal vectors.
+- [ ] **Performance Audit:**
+  - [ ] Verify tRPC response times and Optimize Cloud Function "Cold Starts."
+- [ ] **Production Launch:**
+  - [ ] Merge `dev` to `main` and verify the final automated deployment.

@@ -9,23 +9,28 @@ vi.mock('./firebase', () => ({
 }))
 
 describe('App', () => {
-  it('renders the RAG App heading', () => {
+  it('renders the bottom navigation', () => {
     render(<App />)
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('RAG App')
+    expect(screen.getByRole('navigation', { name: /bottom navigation/i })).toBeInTheDocument()
   })
 
-  it('renders the RAG Chat heading', () => {
+  it('renders the Today nav link', () => {
     render(<App />)
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('RAG Chat')
+    expect(screen.getByRole('link', { name: /today/i })).toBeInTheDocument()
   })
 
-  it('renders the chat input', () => {
+  it('renders the Bible nav link', () => {
     render(<App />)
-    expect(screen.getByPlaceholderText('Ask a question…')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /bible/i })).toBeInTheDocument()
   })
 
-  it('renders the send button', () => {
+  it('renders the AI trigger button', () => {
     render(<App />)
-    expect(screen.getByRole('button', { name: /send/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /open ai assistant/i })).toBeInTheDocument()
+  })
+
+  it('renders the Today page by default', () => {
+    render(<App />)
+    expect(screen.getByText(/day streak/i)).toBeInTheDocument()
   })
 })

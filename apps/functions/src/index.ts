@@ -1,86 +1,41 @@
 import * as admin from 'firebase-admin'
-import { onCall } from 'firebase-functions/v2/https'
-import { GoogleGenAI } from '@google/genai'
+import { onCall, onRequest } from 'firebase-functions/v2/https'
+import { defineSecret } from 'firebase-functions/params'
+import { fetchRequestHandler } from '@trpc/server/adapters/fetch'
 import { ENV } from './env'
 import { embedTexts } from './embeddings'
-import { findNearestChunks, batchStoreChunks } from './firestoreSearch'
+import { batchStoreChunks } from './firestoreSearch'
 import { chunkText } from './chunking'
+import { ragQuery, type PromptProfile } from './rag'
+import { appRouter } from './trpc/router'
 
 admin.initializeApp()
 const db = admin.firestore()
 
-function vertexClient() {
-  process.env.GOOGLE_GENAI_USE_VERTEXAI = 'true'
-  process.env.GOOGLE_CLOUD_PROJECT = ENV.projectId
-  process.env.GOOGLE_CLOUD_LOCATION = ENV.location
-  return new GoogleGenAI({})
-}
+// ── Chat (RAG Pipeline) ───────────────────────────────────────────
 
-export const chat = onCall({ cors: true, region: ENV.location }, async req => {
+export const chat = onCall({ cors: true, region: ENV.location }, async (req) => {
   const question = String(req.data?.question || '').trim()
+  const profile = (req.data?.profile as PromptProfile) || 'bible-study'
+
   if (!question) throw new Error('Missing question')
 
-  // 1) embed the query
-  const [qVec] = await embedTexts([question])
-
-  // 2) vector search via Firestore native
-  const nearestChunks = await findNearestChunks(qVec, 6)
-
-  // 3) fetch parent doc metadata for citations
-  const chunks: Array<{ id: string; text: string; sourceUri?: string; title?: string }> = []
-
-  for (const chunk of nearestChunks) {
-    const docSnap = await db.doc(`docs/${chunk.docId}`).get()
-    const doc = docSnap.data() as { sourceUri?: string; title?: string }
-    chunks.push({
-      id: chunk.id,
-      text: chunk.text,
-      sourceUri: doc?.sourceUri,
-      title: doc?.title,
-    })
-  }
-
-  // 4) prompt Gemini with grounded context
-  const ai = vertexClient()
-  const contextBlock = chunks
-    .slice(0, 6)
-    .map(
-      (c, i) =>
-        `SOURCE ${i + 1}\nTitle: ${c.title || 'Untitled'}\nURI: ${c.sourceUri || 'unknown'}\nText:\n${c.text}`
-    )
-    .join('\n\n---\n\n')
-
-  const system = `You are a helpful assistant. Answer using ONLY the provided sources when possible.
-If sources are insufficient, say what is missing and suggest what to ingest next.
-Always include a "Sources" section that lists which SOURCE numbers you used.`
-
-  const resp = await ai.models.generateContent({
-    model: ENV.chatModel,
-    contents: [
-      {
-        role: 'user',
-        parts: [
-          { text: `SYSTEM:\n${system}\n\nCONTEXT:\n${contextBlock}\n\nQUESTION:\n${question}` },
-        ],
-      },
-    ],
-  })
+  const result = await ragQuery({ question, profile })
 
   return {
-    answer: resp.text ?? '',
-    sources: chunks.map((c, i) => ({
-      sourceNo: i + 1,
-      title: c.title,
-      uri: c.sourceUri,
-    })),
+    answer: result.answer,
+    sources: result.sources,
+    profile: result.profile,
+    chunksRetrieved: result.chunksRetrieved,
   }
 })
 
-export const ingestFromApi = onCall({ cors: true, region: 'us-central1' }, async req => {
+// ── Ingest from URL ────────────────────────────────────────────────
+
+export const ingestFromApi = onCall({ cors: true, region: 'us-central1' }, async (req) => {
+  if (!req.auth) throw new Error('Unauthorized - must be logged in')
+
   const url = String(req.data?.url || '')
-  if (!req.auth) {
-    throw new Error('Unauthorized - must be logged in')
-  }
   if (!url) throw new Error('Missing url')
 
   const res = await fetch(url)
@@ -106,4 +61,35 @@ export const ingestFromApi = onCall({ cors: true, region: 'us-central1' }, async
   return { docId: docRef.id, chunkCount: chunks.length }
 })
 
+// ── Ingest from Cloud Storage ──────────────────────────────────────
+
 export { ingestFromGcs } from './gcsIngest'
+
+// ── tRPC HTTP handler ──────────────────────────────────────────────
+
+const youversionApiKey = defineSecret('YOUVERSION_API_KEY')
+
+export const api = onRequest(
+  { cors: true, region: ENV.location, secrets: [youversionApiKey] },
+  async (req, res) => {
+    const host = req.headers.host ?? 'localhost'
+    const url = `${req.protocol}://${host}${req.originalUrl}`
+
+    const fetchReq = new Request(url, {
+      method: req.method,
+      headers: new Headers(req.headers as Record<string, string>),
+      body: req.method === 'GET' || req.method === 'HEAD' ? undefined : JSON.stringify(req.body),
+    })
+
+    const response = await fetchRequestHandler({
+      endpoint: '/api/trpc',
+      req: fetchReq,
+      router: appRouter,
+      createContext: () => ({}),
+    })
+
+    res.status(response.status)
+    response.headers.forEach((value, key) => res.setHeader(key, value))
+    res.end(await response.text())
+  }
+)

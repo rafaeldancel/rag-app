@@ -44,11 +44,24 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        streak: {
+          DEFAULT: "hsl(var(--streak))",
+          foreground: "hsl(var(--streak-foreground))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      fontFamily: {
+        serif: ["Lora", "Georgia", "serif"],
+      },
+      boxShadow: {
+        soft: "var(--shadow-soft)",
+      },
+      maxWidth: {
+        mobile: "48rem",
       },
     },
   },

@@ -1,0 +1,116 @@
+---
+
+## 🛠️ Technical Design & Industry Standards
+
+### 1. Vectorized Memory (Firestore + Vertex)
+
+- Diary entries are converted into **embeddings** using Vertex AI.
+- When Peter is asked a question, a **Cosine Similarity** search is performed on the user's personal Firestore collection to inject "Personal Context" into the prompt.
+
+### 2. The "Peter" System Instruction (Logic Bridge)
+
+Peter operates under a strict system instruction:
+
+> _"You are Peter, an intellectually rigorous mentor. You lead with logic and historical evidence for users with 'Materialist' baselines. You only bridge to spiritual application as the user's 'Openness' score increases. Never use Christianese jargon without defining it first."_
+
+### 3. Monitoring & Quality
+
+- **Success Metric:** Time-to-Value (how quickly a user finds a 'Topic Suggestion' that leads to a deep-dive).
+- **Safety:** Peter is prohibited from giving medical or professional legal advice, defaulting instead to biblical/historical perspectives on ethics, if a user asks anything outside of the app’s context, it should handle that properly.
+
+[RAG Source Strategy](https://www.notion.so/RAG-Source-Strategy-30d075b8be8480138856c26a3db61fba?pvs=21)
+
+---
+
+[RAG Source](https://www.notion.so/RAG-Source-30d075b8be848086bac0ce3e44fa9a65?pvs=21)
+
+# 📑 Logos: Optimized Source & RAG Strategy (v3.0)
+
+**Guiding Principle:** "Maximum Logic, Minimum Bloat." We use Python-driven automation to transform raw PDF libraries into a high-density, searchable "Courtroom" in Firestore.
+
+---
+
+## 1. The Automated Knowledge Base (The "Courtroom" Library)
+
+Instead of manual JSON mapping, we use a **Python-powered ingestion pipeline** to process PDFs into Firestore NoSQL documents.
+
+| **Tier** | **Category**        | **Theist Evidence (The Case)**        | **Skeptic Steel Man (The Rebuttal)** |
+| -------- | ------------------- | ------------------------------------- | ------------------------------------ |
+| **0**    | **Logic & Science** | • **W.L. Craig:** _Reasonable Faith/_ |
+
+• **S. Meyer:** _Return of the God Hypothesis_
+• **C. Knechtle:** _Give Me An Answer_ (Transcripts) | • **B. Russell:** _Why I Am Not a Christian_
+• **R. Dawkins:** _The God Delusion_
+• **C. Hitchens:** _God Is Not Great_ |
+| **1** | **History & Provenance** | • **N.T. Wright:** _The Resurrection of the Son of God_
+• **C. Blomberg:** _The Historical Reliability of the NT_ | • **B. Ehrman:** _Misquoting Jesus_ & _Jesus, Interrupted_
+• **G. Smith:** Was the tomb empty? |
+| **1** | **Neutral Witnesses** | **[The Historians]**
+• **Tacitus:** _Annals_ (XV.44)
+• **Josephus:** _Antiquities of the Jews_ (18 & 20)
+• **Pliny the Younger:** _Letters_ (X.96)
+• **Suetonius:** _Lives of the Caesars_ (Nero & Claudius)
+• **Mara Bar-Serapion:** _Letter to Serapion_ | _These sources act as neutral/hostile "witnesses" that anchor both the Theist and Skeptic arguments in physical history._ |
+| **2** | **Meaning & Ethics** | • **V. Frankl:** _Man's Search for Meaning_
+• **C.S. Lewis:** _The Abolition of Man_ & _Mere Christianity_ | • **F. Nietzsche:** _Thus Spoke Zarathustra_
+• **A. Camus:** _The Myth of Sisyphus_
+• **J.P. Sartre:** _Existentialism and Humanism_ |
+
+### 🐍 Python Ingestion Pipeline (Phase 1)
+
+- **Source:** Drop your PDF library into a `sources/` folder.
+- **Logic:** A Python script reads the PDFs, extracts text, and breaks it into **semantic chunks** (~800 characters with 10% overlap).
+- **Metadata Tagging:** The script auto-tags chunks based on **filename conventions** (e.g., `tier1_theist_blomberg.pdf`) to maintain the "Courtroom" hierarchy.
+- **Vectorization:** Each chunk is passed to `text-embedding-004` (Vertex AI) to generate 768-dimension vectors.
+- **Firestore Save:** Each chunk is saved as a NoSQL document:TypeScript
+  #
+  `{
+  content: "...",           // Raw text chunk
+  vector: [0.12, -0.4...],  // The text-embedding-004 vector
+  metadata: { tier, stance, source_title, axis }
+}`
+
+---
+
+## 2. The "Cliffe-Peter" Transcript Engine
+
+We treat the 50 Cliffe Knechtle campus debate transcripts as a specialized PDF sub-set.
+
+- **Compression Logic:** During Python ingestion, we use a **"Refinement Prompt"** to summarize transcript pages into **"Golden Q&A Units."**
+- **Result:** Peter retrieves the high-density logic of Cliffe’s responses (150-token "Logic Units") rather than the 2,000-token raw transcript clutter.
+
+---
+
+## 3. The "Thin-Client" RAG Architecture (Cost Efficiency)
+
+We use Firestore’s native vector capabilities and Vertex AI's latest caching features to keep performance high and billing low.
+
+### A. Native Vector Search (`findNearest`)
+
+- **How:** When a user asks a question, we embed the query and use Firestore’s native `findNearest()` function.
+- **Efficiency:** We use **`DOT_PRODUCT`** as the distance measure. Since `text-embedding-004` provides normalized vectors, `DOT_PRODUCT` is the fastest and most accurate way to find semantic matches in NoSQL.
+
+### B. Vertex AI Context Caching (The 90% Discount)
+
+- **How:** Peter’s core instructions and the "3-Axis" logic rules are cached via Vertex AI.
+- **Benefit:** You pay full price for instructions only on the first call; all subsequent messages in that hour receive a **90% token discount**.
+
+### C. Semantic Caching (The "Bypass" Layer)
+
+- **How:** We check a `semantic_cache` Firestore collection. If a new query matches a previous one with 95% similarity, we serve the **cached response** instantly at **zero LLM cost**.
+
+### D. Multi-Model Tiering
+
+- **Primary:** **Gemini 3 Flash** for 95% of queries (fast, cheap).
+- **Reasoning:** **Gemini 1.5 Pro** for deep "Tier 2" philosophical questions requiring cross-referencing multiple PDFs.
+
+---
+
+## 4. UI Implementation: The "Grounding Switch"
+
+Transparency is key to being "evidence-based."
+
+- **Citation Icon:** Appears next to Peter's claims.
+- **The "Clash" View:** Tapping the icon shows a split view:
+  > _"Peter utilized the logic of [N.T. Wright] while accounting for the critiques of [Bart Ehrman]."_
+- **Direct Link:** Provides a deep link to the source (e.g., the specific PDF page or a YouVersion Bible verse).
