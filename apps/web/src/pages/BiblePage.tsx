@@ -153,9 +153,16 @@ export function BiblePage() {
     selectedVerseObjects.length === 1 && firstUsfm ? annotationMap[firstUsfm] : undefined
 
   async function handleAnnotationSave(highlight: HighlightColor, note: string) {
+    const chapterRef = chapterQuery.data?.reference ?? `${book} ${chapterNum}`
     await Promise.all(
       selectedVerseObjects.map(v =>
-        upsertAnnotation.mutateAsync({ userId: 'guest', usfm: v.usfm, highlight, note })
+        upsertAnnotation.mutateAsync({
+          userId: 'guest',
+          usfm: v.usfm,
+          highlight,
+          note,
+          reference: `${chapterRef}:${v.number}`,
+        })
       )
     )
     setSelectedVerses(new Set())

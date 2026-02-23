@@ -3,7 +3,7 @@ import path from 'path'
 await build({
   entryPoints: ['src/index.ts'],
   bundle: true,
-  outfile: 'lib/index.js',
+  outfile: 'dist/index.js',
   platform: 'node',
   target: 'node22',
   format: 'cjs',

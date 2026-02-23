@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.chunkText = chunkText;
-function chunkText(text, maxChars = 1200) {
+export function chunkText(text, maxChars = 1200) {
     const paras = text
         .split(/\n{2,}/g)
         .map(p => p.trim())

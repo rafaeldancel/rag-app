@@ -35,7 +35,7 @@ __export(index_exports, {
   ingestFromGcs: () => ingestFromGcs
 });
 module.exports = __toCommonJS(index_exports);
-var admin4 = __toESM(require("firebase-admin"));
+var admin6 = __toESM(require("firebase-admin"));
 var import_https = require("firebase-functions/v2/https");
 var import_params = require("firebase-functions/params");
 
@@ -6920,6 +6920,72 @@ var DailyPrayerSchema = external_exports.object({
   basedOn: external_exports.string()
 });
 
+// ../../packages/shared/src/schemas/diary.ts
+var ListDiaryEntriesInputSchema = external_exports.object({
+  userId: external_exports.string()
+});
+var CreateDiaryEntryInputSchema = external_exports.object({
+  userId: external_exports.string(),
+  title: external_exports.string().min(1).max(200),
+  text: external_exports.string().min(1).max(5e3)
+});
+var UpdateDiaryEntryInputSchema = external_exports.object({
+  userId: external_exports.string(),
+  id: external_exports.string(),
+  title: external_exports.string().min(1).max(200),
+  text: external_exports.string().min(1).max(5e3)
+});
+var DeleteDiaryEntryInputSchema = external_exports.object({
+  userId: external_exports.string(),
+  id: external_exports.string()
+});
+var AIInsightSchema = external_exports.object({
+  text: external_exports.string(),
+  verseRef: external_exports.string().optional(),
+  verseText: external_exports.string().optional()
+});
+var DiaryEntrySchema = external_exports.object({
+  id: external_exports.string(),
+  title: external_exports.string(),
+  text: external_exports.string(),
+  createdAt: external_exports.number(),
+  updatedAt: external_exports.number(),
+  aiInsight: AIInsightSchema.nullable()
+});
+
+// ../../packages/shared/src/schemas/annotations.ts
+var HighlightColorSchema = external_exports.enum(["yellow", "blue", "green"]).nullable();
+var UpsertAnnotationInputSchema = external_exports.object({
+  userId: external_exports.string(),
+  /** Full USFM address — e.g. "JHN.3.16" */
+  usfm: external_exports.string(),
+  highlight: HighlightColorSchema.optional(),
+  note: external_exports.string().max(2e3).optional(),
+  /** Human-readable reference, e.g. "John 3:16" */
+  reference: external_exports.string().optional()
+});
+var GetAnnotationsInputSchema = external_exports.object({
+  userId: external_exports.string(),
+  /** USFM book code — e.g. "JHN" */
+  book: external_exports.string(),
+  chapter: external_exports.number().int().min(1)
+});
+var ListAnnotationsInputSchema = external_exports.object({
+  userId: external_exports.string()
+});
+var DeleteAnnotationInputSchema = external_exports.object({
+  userId: external_exports.string(),
+  /** Full USFM address — e.g. "JHN.3.16" */
+  usfm: external_exports.string()
+});
+var AnnotationSchema = external_exports.object({
+  usfm: external_exports.string(),
+  highlight: HighlightColorSchema,
+  note: external_exports.string().nullable(),
+  reference: external_exports.string().nullable(),
+  createdAt: external_exports.number()
+});
+
 // src/trpc/routers/user.ts
 var userRouter = router({
   create: publicProcedure.input(CreateUserSchema).output(UserSchema).mutation(({ input }) => ({
@@ -7206,14 +7272,189 @@ var bibleRouter = router({
   })
 });
 
+// src/trpc/routers/diary.ts
+var admin3 = __toESM(require("firebase-admin"));
+var import_genai4 = require("@google/genai");
+async function generateInsight(text) {
+  try {
+    const ai = new import_genai4.GoogleGenAI({ vertexai: true, project: ENV.projectId, location: ENV.location });
+    const prompt = [
+      "Here is a personal journal entry written by a Christian seeking to grow in faith:",
+      "",
+      `"${text}"`,
+      "",
+      "As a compassionate Christian mentor, provide a brief response (2\u20133 sentences) that:",
+      "1. Affirms what they have shared without being preachy or generic",
+      "2. Connects it to one relevant scripture passage",
+      "",
+      "Reply with ONLY valid JSON in this shape (no markdown):",
+      '{ "text": "your insight here", "verseRef": "Book Chapter:Verse", "verseText": "short verse quote" }'
+    ].join("\n");
+    const response = await ai.models.generateContent({
+      model: ENV.chatModel,
+      contents: [{ role: "user", parts: [{ text: prompt }] }]
+    });
+    const raw = (response.text ?? "").trim();
+    const json = raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
+    const parsed = JSON.parse(json);
+    return AIInsightSchema.parse(parsed);
+  } catch {
+    return null;
+  }
+}
+function toEntry(id, data) {
+  return DiaryEntrySchema.parse({
+    id,
+    title: data.title ?? "",
+    text: data.text ?? "",
+    createdAt: data.createdAt?.toMillis() ?? Date.now(),
+    updatedAt: data.updatedAt?.toMillis() ?? Date.now(),
+    aiInsight: data.aiInsight ?? null
+  });
+}
+var diaryRouter = router({
+  /** List all diary entries for a user, newest first. */
+  list: publicProcedure.input(ListDiaryEntriesInputSchema).output(DiaryEntrySchema.array()).query(async ({ input }) => {
+    const db2 = admin3.firestore();
+    const snap = await db2.collection(`users/${input.userId}/diaryEntries`).orderBy("createdAt", "desc").get();
+    return snap.docs.map((d) => toEntry(d.id, d.data()));
+  }),
+  /** Create a new diary entry and generate an AI insight. */
+  create: publicProcedure.input(CreateDiaryEntryInputSchema).output(DiaryEntrySchema).mutation(async ({ input }) => {
+    const db2 = admin3.firestore();
+    const now = admin3.firestore.FieldValue.serverTimestamp();
+    const ref = await db2.collection(`users/${input.userId}/diaryEntries`).add({
+      title: input.title,
+      text: input.text,
+      aiInsight: null,
+      createdAt: now,
+      updatedAt: now
+    });
+    const insight = await generateInsight(input.text);
+    if (insight) {
+      await ref.update({ aiInsight: insight });
+    }
+    const snap = await ref.get();
+    return toEntry(snap.id, snap.data());
+  }),
+  /** Update an existing diary entry and regenerate the AI insight. */
+  update: publicProcedure.input(UpdateDiaryEntryInputSchema).output(DiaryEntrySchema).mutation(async ({ input }) => {
+    const db2 = admin3.firestore();
+    const ref = db2.doc(`users/${input.userId}/diaryEntries/${input.id}`);
+    const existing = await ref.get();
+    if (!existing.exists) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Diary entry not found." });
+    }
+    await ref.update({
+      title: input.title,
+      text: input.text,
+      aiInsight: null,
+      updatedAt: admin3.firestore.FieldValue.serverTimestamp()
+    });
+    const insight = await generateInsight(input.text);
+    if (insight) {
+      await ref.update({ aiInsight: insight });
+    }
+    const snap = await ref.get();
+    return toEntry(snap.id, snap.data());
+  }),
+  /** Delete a diary entry. Returns the deleted entry's id. */
+  delete: publicProcedure.input(DeleteDiaryEntryInputSchema).output(external_exports.object({ id: external_exports.string() })).mutation(async ({ input }) => {
+    const db2 = admin3.firestore();
+    await db2.doc(`users/${input.userId}/diaryEntries/${input.id}`).delete();
+    return { id: input.id };
+  })
+});
+
+// src/trpc/routers/annotations.ts
+var admin4 = __toESM(require("firebase-admin"));
+var annotationsRouter = router({
+  /**
+   * Create or update a verse annotation (highlight + note).
+   * Stored at: users/{userId}/annotations/{usfm}
+   * createdAt is set only on first write; reference is stored if provided.
+   */
+  upsert: publicProcedure.input(UpsertAnnotationInputSchema).output(AnnotationSchema).mutation(async ({ input }) => {
+    const db2 = admin4.firestore();
+    const docId = input.usfm.replace(/\./g, "_");
+    const ref = db2.doc(`users/${input.userId}/annotations/${docId}`);
+    const existing = (await ref.get()).data();
+    const now = Date.now();
+    const update = {
+      usfm: input.usfm,
+      updatedAt: now
+    };
+    if (!existing?.createdAt) update.createdAt = now;
+    if (input.highlight !== void 0) update.highlight = input.highlight;
+    if (input.note !== void 0) update.note = input.note;
+    if (input.reference !== void 0) update.reference = input.reference;
+    await ref.set(update, { merge: true });
+    const snap = await ref.get();
+    const data = snap.data();
+    return AnnotationSchema.parse({
+      usfm: data.usfm ?? input.usfm,
+      highlight: data.highlight ?? null,
+      note: data.note ?? null,
+      reference: data.reference ?? null,
+      createdAt: data.createdAt ?? now
+    });
+  }),
+  /**
+   * Get all annotations for a given book + chapter.
+   */
+  getForChapter: publicProcedure.input(GetAnnotationsInputSchema).output(AnnotationSchema.array()).query(async ({ input }) => {
+    const db2 = admin4.firestore();
+    const prefix = `${input.book}.${input.chapter}.`;
+    const snap = await db2.collection(`users/${input.userId}/annotations`).where("usfm", ">=", prefix).where("usfm", "<", prefix + "\uFFFF").get();
+    return snap.docs.map((d) => {
+      const data = d.data();
+      return AnnotationSchema.parse({
+        usfm: data.usfm ?? "",
+        highlight: data.highlight ?? null,
+        note: data.note ?? null,
+        reference: data.reference ?? null,
+        createdAt: data.createdAt ?? 0
+      });
+    });
+  }),
+  /**
+   * List all annotations for a user, ordered by newest first.
+   */
+  listAll: publicProcedure.input(ListAnnotationsInputSchema).output(AnnotationSchema.array()).query(async ({ input }) => {
+    const db2 = admin4.firestore();
+    const snap = await db2.collection(`users/${input.userId}/annotations`).orderBy("createdAt", "desc").get();
+    return snap.docs.map((d) => {
+      const data = d.data();
+      return AnnotationSchema.parse({
+        usfm: data.usfm ?? "",
+        highlight: data.highlight ?? null,
+        note: data.note ?? null,
+        reference: data.reference ?? null,
+        createdAt: data.createdAt ?? 0
+      });
+    });
+  }),
+  /**
+   * Delete a single annotation by USFM address.
+   */
+  delete: publicProcedure.input(DeleteAnnotationInputSchema).output(DeleteAnnotationInputSchema.pick({ usfm: true })).mutation(async ({ input }) => {
+    const db2 = admin4.firestore();
+    const docId = input.usfm.replace(/\./g, "_");
+    await db2.doc(`users/${input.userId}/annotations/${docId}`).delete();
+    return { usfm: input.usfm };
+  })
+});
+
 // src/trpc/router.ts
 var appRouter = router({
   user: userRouter,
-  bible: bibleRouter
+  bible: bibleRouter,
+  diary: diaryRouter,
+  annotations: annotationsRouter
 });
 
 // src/gcsIngest.ts
-var admin3 = __toESM(require("firebase-admin"));
+var admin5 = __toESM(require("firebase-admin"));
 var import_storage = require("firebase-functions/v2/storage");
 var import_storage2 = require("@google-cloud/storage");
 var storage = new import_storage2.Storage();
@@ -7223,7 +7464,7 @@ var ingestFromGcs = (0, import_storage.onObjectFinalized)(
     bucket: "logos-91c8e-rag-docs"
   },
   async (event) => {
-    const db2 = admin3.firestore();
+    const db2 = admin5.firestore();
     const filePath = event.data.name;
     const bucketName = event.data.bucket;
     if (!filePath.match(/\.(txt|md|json)$/)) {
@@ -7237,8 +7478,8 @@ var ingestFromGcs = (0, import_storage.onObjectFinalized)(
       sourceType: "gcs",
       sourceUri: `gs://${bucketName}/${filePath}`,
       title: filePath.split("/").pop() ?? filePath,
-      createdAt: admin3.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin3.firestore.FieldValue.serverTimestamp()
+      createdAt: admin5.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin5.firestore.FieldValue.serverTimestamp()
     });
     const chunks = chunkText(raw);
     const vectors = await embedTexts(chunks);
@@ -7251,8 +7492,8 @@ var ingestFromGcs = (0, import_storage.onObjectFinalized)(
 );
 
 // src/index.ts
-admin4.initializeApp();
-var db = admin4.firestore();
+admin6.initializeApp();
+var db = admin6.firestore();
 var chat = (0, import_https.onCall)({ cors: true, region: ENV.location }, async (req) => {
   const question = String(req.data?.question || "").trim();
   const profile = req.data?.profile || "bible-study";
@@ -7276,8 +7517,8 @@ var ingestFromApi = (0, import_https.onCall)({ cors: true, region: "us-central1"
     sourceType: "api",
     sourceUri: url,
     title: url,
-    createdAt: admin4.firestore.FieldValue.serverTimestamp(),
-    updatedAt: admin4.firestore.FieldValue.serverTimestamp()
+    createdAt: admin6.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin6.firestore.FieldValue.serverTimestamp()
   });
   const chunks = chunkText(raw);
   const vectors = await embedTexts(chunks);

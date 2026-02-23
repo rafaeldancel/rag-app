@@ -11,12 +11,29 @@ export function useChapterAnnotations(book: string, chapter: number) {
   )
 }
 
+/** Returns all annotations for the user, newest first. */
+export function useAllAnnotations() {
+  return trpc.annotations.listAll.useQuery({ userId: USER_ID }, { staleTime: 0 })
+}
+
 export function useUpsertAnnotation() {
   const utils = trpc.useUtils()
   return trpc.annotations.upsert.useMutation({
     onSuccess: (_data, variables) => {
       const { book, chapter } = parseBookChapter(variables.usfm)
       utils.annotations.getForChapter.invalidate({ userId: USER_ID, book, chapter })
+      utils.annotations.listAll.invalidate({ userId: USER_ID })
+    },
+  })
+}
+
+export function useDeleteAnnotation() {
+  const utils = trpc.useUtils()
+  return trpc.annotations.delete.useMutation({
+    onSuccess: (_data, variables) => {
+      const { book, chapter } = parseBookChapter(variables.usfm)
+      utils.annotations.getForChapter.invalidate({ userId: USER_ID, book, chapter })
+      utils.annotations.listAll.invalidate({ userId: USER_ID })
     },
   })
 }

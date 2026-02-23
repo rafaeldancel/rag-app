@@ -4,6 +4,8 @@ import { SegmentedControl } from '../components/diary/SegmentedControl'
 import { MentorInsightCard } from '../components/diary/MentorInsightCard'
 import { DiaryEntryCard } from '../components/diary/DiaryEntryCard'
 import { DiaryComposer } from '../components/diary/DiaryComposer'
+import { HighlightCard } from '../components/diary/HighlightCard'
+import { NoteCard } from '../components/diary/NoteCard'
 import { Skeleton } from '../components/atoms/Skeleton'
 import {
   useDiaryEntries,
@@ -11,6 +13,11 @@ import {
   useUpdateDiaryEntry,
   useDeleteDiaryEntry,
 } from '../hooks/useDiary'
+import {
+  useAllAnnotations,
+  useUpsertAnnotation,
+  useDeleteAnnotation,
+} from '../hooks/useAnnotations'
 import type { DiaryEntry } from '@repo/shared'
 
 const SEGMENTS = [
@@ -30,6 +37,15 @@ function EntrySkeleton() {
   )
 }
 
+function AnnotationSkeleton() {
+  return (
+    <div className="mx-4 rounded-xl border bg-card p-4 shadow-soft space-y-2">
+      <Skeleton className="h-4 w-2/5" />
+      <Skeleton className="h-3 w-24" />
+    </div>
+  )
+}
+
 export function DiaryPage() {
   const [tab, setTab] = useState('diary')
   const [composerOpen, setComposerOpen] = useState(false)
@@ -39,6 +55,10 @@ export function DiaryPage() {
   const createMutation = useCreateDiaryEntry()
   const updateMutation = useUpdateDiaryEntry()
   const deleteMutation = useDeleteDiaryEntry()
+
+  const annotationsQuery = useAllAnnotations()
+  const upsertAnnotation = useUpsertAnnotation()
+  const deleteAnnotation = useDeleteAnnotation()
 
   const isSaving = createMutation.isPending || updateMutation.isPending
 
@@ -76,11 +96,15 @@ export function DiaryPage() {
     })
   }
 
+  const highlights = (annotationsQuery.data ?? []).filter(a => a.highlight !== null)
+  const notes = (annotationsQuery.data ?? []).filter(a => a.note && a.note.trim().length > 0)
+
   return (
     <>
       <main className="flex-1 overflow-y-auto scrollbar-none space-y-4 pb-20 pt-4">
         <SegmentedControl segments={SEGMENTS} value={tab} onChange={setTab} />
 
+        {/* ── Diary tab ── */}
         {tab === 'diary' && (
           <>
             {latestInsight && (
@@ -133,14 +157,84 @@ export function DiaryPage() {
           </>
         )}
 
+        {/* ── Notes tab ── */}
         {tab === 'notes' && (
-          <p className="mx-4 text-sm text-muted-foreground">
-            Notes from Bible verses will appear here.
-          </p>
+          <>
+            {annotationsQuery.isLoading && (
+              <>
+                <AnnotationSkeleton />
+                <AnnotationSkeleton />
+              </>
+            )}
+
+            {annotationsQuery.isError && (
+              <p className="mx-4 text-sm text-muted-foreground">Unable to load notes.</p>
+            )}
+
+            {!annotationsQuery.isLoading && notes.length === 0 && (
+              <div className="mx-4 flex flex-col items-center gap-2 py-12 text-center">
+                <p className="text-sm font-semibold text-foreground">No notes yet</p>
+                <p className="text-xs text-muted-foreground">
+                  Tap a Bible verse and add a note to see it here.
+                </p>
+              </div>
+            )}
+
+            {notes.map(a => (
+              <NoteCard
+                key={a.usfm}
+                usfm={a.usfm}
+                reference={a.reference ?? a.usfm}
+                note={a.note!}
+                createdAt={a.createdAt}
+                isSaving={upsertAnnotation.isPending}
+                onSave={newNote =>
+                  upsertAnnotation.mutateAsync({
+                    userId: 'guest',
+                    usfm: a.usfm,
+                    note: newNote,
+                  })
+                }
+                onDelete={() => deleteAnnotation.mutateAsync({ userId: 'guest', usfm: a.usfm })}
+              />
+            ))}
+          </>
         )}
 
+        {/* ── Highlights tab ── */}
         {tab === 'highlights' && (
-          <p className="mx-4 text-sm text-muted-foreground">Highlighted verses will appear here.</p>
+          <>
+            {annotationsQuery.isLoading && (
+              <>
+                <AnnotationSkeleton />
+                <AnnotationSkeleton />
+              </>
+            )}
+
+            {annotationsQuery.isError && (
+              <p className="mx-4 text-sm text-muted-foreground">Unable to load highlights.</p>
+            )}
+
+            {!annotationsQuery.isLoading && highlights.length === 0 && (
+              <div className="mx-4 flex flex-col items-center gap-2 py-12 text-center">
+                <p className="text-sm font-semibold text-foreground">No highlights yet</p>
+                <p className="text-xs text-muted-foreground">
+                  Tap a Bible verse and choose a highlight color to see it here.
+                </p>
+              </div>
+            )}
+
+            {highlights.map(a => (
+              <HighlightCard
+                key={a.usfm}
+                usfm={a.usfm}
+                reference={a.reference ?? a.usfm}
+                highlight={a.highlight!}
+                createdAt={a.createdAt}
+                onDelete={() => deleteAnnotation.mutateAsync({ userId: 'guest', usfm: a.usfm })}
+              />
+            ))}
+          </>
         )}
       </main>
 

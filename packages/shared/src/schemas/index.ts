@@ -45,11 +45,15 @@ export {
   HighlightColorSchema,
   UpsertAnnotationInputSchema,
   GetAnnotationsInputSchema,
+  ListAnnotationsInputSchema,
+  DeleteAnnotationInputSchema,
   AnnotationSchema,
 } from './annotations'
 export type {
   HighlightColor,
   UpsertAnnotationInput,
   GetAnnotationsInput,
+  ListAnnotationsInput,
+  DeleteAnnotationInput,
   Annotation,
 } from './annotations'
