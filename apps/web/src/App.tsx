@@ -54,7 +54,17 @@ export function App() {
             }}
             initialInput={aiPrefill}
           />
-          <BottomNav onAIPress={() => openAI()} />
+          <BottomNav
+            aiOpen={aiOpen}
+            onAIPress={() => {
+              if (aiOpen) {
+                setAiOpen(false)
+                setAiPrefill('')
+              } else {
+                openAI()
+              }
+            }}
+          />
         </AppShell>
       </BrowserRouter>
     </AIModalContext.Provider>
