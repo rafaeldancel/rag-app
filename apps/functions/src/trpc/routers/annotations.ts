@@ -36,6 +36,7 @@ export const annotationsRouter = router({
       if (input.highlight !== undefined) update.highlight = input.highlight
       if (input.note !== undefined) update.note = input.note
       if (input.reference !== undefined) update.reference = input.reference
+      if (input.verseText !== undefined) update.verseText = input.verseText
 
       await ref.set(update, { merge: true })
 
@@ -47,6 +48,7 @@ export const annotationsRouter = router({
         highlight: data.highlight ?? null,
         note: data.note ?? null,
         reference: data.reference ?? null,
+        verseText: data.verseText ?? null,
         createdAt: data.createdAt ?? now,
       })
     }),
@@ -74,6 +76,7 @@ export const annotationsRouter = router({
           highlight: data.highlight ?? null,
           note: data.note ?? null,
           reference: data.reference ?? null,
+          verseText: data.verseText ?? null,
           createdAt: data.createdAt ?? 0,
         })
       })
@@ -100,6 +103,7 @@ export const annotationsRouter = router({
           highlight: data.highlight ?? null,
           note: data.note ?? null,
           reference: data.reference ?? null,
+          verseText: data.verseText ?? null,
           createdAt: data.createdAt ?? 0,
         })
       })

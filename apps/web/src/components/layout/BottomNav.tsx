@@ -12,9 +12,10 @@ const NAV_ITEMS = [
 
 interface BottomNavProps {
   onAIPress?: () => void
+  aiOpen?: boolean
 }
 
-export function BottomNav({ onAIPress }: BottomNavProps) {
+export function BottomNav({ onAIPress, aiOpen = false }: BottomNavProps) {
   return (
     <nav className="relative mt-auto h-[72px] w-full shrink-0" aria-label="Bottom navigation">
       {/* SVG cutout background — fill-background handles dark mode automatically */}
@@ -33,7 +34,7 @@ export function BottomNav({ onAIPress }: BottomNavProps) {
 
       {/* AI button floats in the well — centered, 32px above nav top */}
       <div className="absolute left-1/2 z-10 -translate-x-1/2 -top-8">
-        <AITriggerButton onClick={onAIPress} />
+        <AITriggerButton onClick={onAIPress} isOpen={aiOpen} />
       </div>
 
       {/* Nav items: left 2 | spacer | right 2 */}

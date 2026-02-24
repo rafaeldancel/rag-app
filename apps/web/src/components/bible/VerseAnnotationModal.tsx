@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react'
-import { X, Sparkles } from 'lucide-react'
+import { X, Sparkles, NotebookPen } from 'lucide-react'
 import { cn } from '@repo/ui/utils'
 import type { HighlightColor, Annotation } from '@repo/shared'
 
@@ -16,9 +15,9 @@ interface VerseAnnotationModalProps {
   verses: SelectedVerse[]
   chapterRef: string
   existingAnnotation?: Annotation | null
-  isSaving: boolean
   onClose: () => void
-  onSave: (highlight: HighlightColor, note: string) => void
+  onHighlight: (color: HighlightColor) => void
+  onNote: () => void
   onAskAI: (prefill: string) => void
 }
 
@@ -27,15 +26,15 @@ interface VerseAnnotationModalProps {
 type HighlightOption = { color: HighlightColor; label: string; bg: string; ring: string }
 
 const HIGHLIGHT_OPTIONS: HighlightOption[] = [
-  { color: null, label: 'None', bg: 'bg-muted', ring: 'ring-muted-foreground/40' },
+  { color: 'blue', label: 'Blue', bg: 'bg-blue-300 dark:bg-blue-600', ring: 'ring-blue-400' },
+  { color: 'red', label: 'Red', bg: 'bg-red-300 dark:bg-red-600', ring: 'ring-red-400' },
+  { color: 'green', label: 'Green', bg: 'bg-green-300 dark:bg-green-600', ring: 'ring-green-400' },
   {
     color: 'yellow',
     label: 'Yellow',
     bg: 'bg-yellow-300 dark:bg-yellow-600',
     ring: 'ring-yellow-400',
   },
-  { color: 'blue', label: 'Blue', bg: 'bg-blue-300 dark:bg-blue-600', ring: 'ring-blue-400' },
-  { color: 'green', label: 'Green', bg: 'bg-green-300 dark:bg-green-600', ring: 'ring-green-400' },
 ]
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -65,26 +64,17 @@ export function VerseAnnotationModal({
   verses,
   chapterRef,
   existingAnnotation,
-  isSaving,
   onClose,
-  onSave,
+  onHighlight,
+  onNote,
   onAskAI,
 }: VerseAnnotationModalProps) {
-  const [highlight, setHighlight] = useState<HighlightColor>(null)
-  const [note, setNote] = useState('')
-
-  // Seed from existing annotation when modal opens
-  useEffect(() => {
-    if (open) {
-      setHighlight(existingAnnotation?.highlight ?? null)
-      setNote(existingAnnotation?.note ?? '')
-    }
-  }, [open, existingAnnotation])
-
   if (!open) return null
 
   const label = buildLabel(chapterRef, verses)
   const aiPrefill = buildAIPrefill(label, verses)
+  const activeHighlight = existingAnnotation?.highlight ?? null
+  const hasNote = !!existingAnnotation?.note?.trim()
 
   return (
     // No backdrop — Bible content above stays fully tappable
@@ -110,36 +100,25 @@ export function VerseAnnotationModal({
         </button>
       </div>
 
-      <div className="px-4 pb-2 space-y-3">
-        {/* Highlight picker */}
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground w-16 shrink-0">
-            Highlight
-          </span>
-          <div className="flex gap-2">
-            {HIGHLIGHT_OPTIONS.map(opt => (
-              <button
-                key={String(opt.color)}
-                onClick={() => setHighlight(opt.color)}
-                aria-label={opt.label}
-                className={cn(
-                  'h-8 w-8 rounded-full ring-2 transition-all',
-                  opt.bg,
-                  highlight === opt.color ? `${opt.ring} ring-offset-2` : 'ring-transparent'
-                )}
-              />
-            ))}
-          </div>
+      {/* Highlight picker — tap a color to instantly save & close */}
+      <div className="flex items-center gap-3 px-4 pb-3">
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground w-16 shrink-0">
+          Highlight
+        </span>
+        <div className="flex gap-2">
+          {HIGHLIGHT_OPTIONS.map(opt => (
+            <button
+              key={String(opt.color)}
+              onClick={() => onHighlight(opt.color)}
+              aria-label={opt.label}
+              className={cn(
+                'h-8 w-8 rounded-full ring-2 transition-all',
+                opt.bg,
+                activeHighlight === opt.color ? `${opt.ring} ring-offset-2` : 'ring-transparent'
+              )}
+            />
+          ))}
         </div>
-
-        {/* Note */}
-        <textarea
-          value={note}
-          onChange={e => setNote(e.target.value)}
-          placeholder="Add a note…"
-          rows={2}
-          className="w-full resize-none rounded-xl border bg-muted/50 px-3 py-2 text-sm leading-relaxed outline-none placeholder:text-muted-foreground focus:border-primary"
-        />
       </div>
 
       {/* Actions */}
@@ -152,16 +131,16 @@ export function VerseAnnotationModal({
           Ask AI
         </button>
         <button
-          onClick={() => onSave(highlight, note)}
-          disabled={isSaving}
+          onClick={onNote}
           className={cn(
-            'flex-1 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
-            isSaving
-              ? 'bg-muted text-muted-foreground cursor-not-allowed'
-              : 'bg-primary text-primary-foreground'
+            'flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+            hasNote
+              ? 'bg-primary/15 text-primary'
+              : 'bg-muted text-muted-foreground hover:bg-muted/80'
           )}
         >
-          {isSaving ? 'Saving…' : 'Save'}
+          <NotebookPen className="h-3.5 w-3.5" />
+          {hasNote ? 'Edit Note' : 'Note'}
         </button>
       </div>
     </div>

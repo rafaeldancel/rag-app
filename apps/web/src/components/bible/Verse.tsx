@@ -12,6 +12,7 @@ interface VerseProps {
 
 const HIGHLIGHT_BG: Record<NonNullable<HighlightColor>, string> = {
   yellow: 'bg-yellow-200/70 dark:bg-yellow-800/30',
+  red: 'bg-red-200/70 dark:bg-red-800/30',
   blue: 'bg-blue-200/70 dark:bg-blue-800/30',
   green: 'bg-green-200/70 dark:bg-green-800/30',
 }

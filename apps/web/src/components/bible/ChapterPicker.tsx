@@ -64,28 +64,28 @@ export function ChapterPicker({
       {/* Backdrop */}
       <div
         className={cn(
-          'fixed inset-0 z-40 bg-black/40 transition-opacity duration-200',
+          'absolute inset-0 z-40 bg-black/40 transition-opacity duration-200',
           open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         )}
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Sheet */}
+      {/* Dialog */}
       <div
         className={cn(
-          'fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-2xl bg-background shadow-xl transition-transform duration-300 ease-out',
-          'max-h-[80vh]',
-          open ? 'translate-y-0' : 'translate-y-full'
+          'absolute left-4 right-4 top-1/2 z-50 flex flex-col rounded-2xl bg-background shadow-2xl',
+          'max-h-[75vh] -translate-y-1/2 transition-all duration-200 ease-out',
+          open
+            ? 'opacity-100 scale-100 pointer-events-auto'
+            : 'opacity-0 scale-95 pointer-events-none'
         )}
         role="dialog"
         aria-modal="true"
         aria-label="Select book and chapter"
       >
-        {/* Handle + header */}
-        <div className="flex items-center px-4 pt-3 pb-2">
-          <div className="mx-auto mb-1 h-1 w-10 rounded-full bg-muted absolute top-3 left-1/2 -translate-x-1/2" />
-
+        {/* Header */}
+        <div className="flex items-center px-4 pt-4 pb-2">
           {selectedBook ? (
             <button
               onClick={() => setSelectedBook(null)}
