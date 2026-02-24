@@ -129,23 +129,18 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
 
   return (
     <>
-      {/* Light tint — chathead style keeps content visible behind */}
-      <div className="absolute inset-0 z-20 bg-black/20" onClick={onClose} aria-hidden="true" />
+      {/* Invisible overlay for click-outside dismiss — no tint so content stays visible */}
+      <div className="absolute inset-0 z-20" onClick={onClose} aria-hidden="true" />
 
-      {/* Chat panel sits above BottomNav so the trigger button stays visible */}
+      {/* Floating chat panel — inset-x-3 gives side margins for the chat-head feel */}
       <div
         role="dialog"
         aria-label="Logos AI assistant"
-        className="absolute inset-x-0 bottom-[72px] z-30 flex flex-col rounded-t-2xl border-t bg-background shadow-[0_-6px_32px_rgba(0,0,0,0.14)]"
-        style={{ maxHeight: 'calc(85vh - 72px)' }}
+        className="absolute inset-x-3 bottom-[84px] z-30 flex flex-col rounded-2xl border bg-background shadow-2xl"
+        style={{ maxHeight: 'calc(68vh - 72px)' }}
       >
-        {/* Drag handle */}
-        <div className="flex justify-center pt-2 pb-1">
-          <div className="h-1 w-10 rounded-full bg-muted-foreground/30" />
-        </div>
-
         {/* Header */}
-        <div className="flex items-center justify-between px-4 pb-3 pt-1">
+        <div className="flex items-center justify-between px-4 py-3 border-b">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
             <span className="text-sm font-semibold text-foreground">Logos AI</span>
@@ -160,7 +155,7 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
         </div>
 
         {/* Message area */}
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-2 space-y-3">
+        <div className="min-h-0 flex-1 overflow-y-auto scrollbar-none px-4 pb-2 space-y-3">
           {/* Empty state + suggested prompts */}
           {chatState === 'idle' && messages.length === 0 && (
             <div className="flex flex-col items-center gap-4 py-6">
@@ -244,7 +239,7 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
             onKeyDown={handleKeyDown}
             placeholder="Ask about scripture, prayer…"
             rows={1}
-            className="flex-1 resize-none overflow-hidden rounded-xl border bg-muted px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
+            className="flex-1 resize-none overflow-y-auto scrollbar-none rounded-xl border bg-muted px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
           />
           <button
             onClick={handleSend}
