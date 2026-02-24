@@ -6,6 +6,7 @@ import { ReaderToolbar } from '../components/bible/ReaderToolbar'
 import { ChapterPicker } from '../components/bible/ChapterPicker'
 import { Verse } from '../components/bible/Verse'
 import { VerseAnnotationModal } from '../components/bible/VerseAnnotationModal'
+import { NoteInputModal } from '../components/bible/NoteInputModal'
 import { Skeleton } from '../components/atoms/Skeleton'
 import { useBibleChapter, useBooks } from '../hooks/useBible'
 import { useChapterAnnotations, useUpsertAnnotation } from '../hooks/useAnnotations'
@@ -43,6 +44,7 @@ export function BiblePage() {
 
   const [selectedVerses, setSelectedVerses] = useState<Set<number>>(new Set())
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [noteModalOpen, setNoteModalOpen] = useState(false)
 
   // Modal opens automatically as soon as any verse is selected
   const annotationOpen = selectedVerses.size > 0
@@ -152,19 +154,36 @@ export function BiblePage() {
   const existingAnnotation =
     selectedVerseObjects.length === 1 && firstUsfm ? annotationMap[firstUsfm] : undefined
 
-  async function handleAnnotationSave(highlight: HighlightColor, note: string) {
-    const chapterRef = chapterQuery.data?.reference ?? `${book} ${chapterNum}`
+  const chapterRef = chapterQuery.data?.reference ?? `${book} ${chapterNum}`
+
+  async function handleHighlightSelect(highlight: HighlightColor) {
     await Promise.all(
       selectedVerseObjects.map(v =>
         upsertAnnotation.mutateAsync({
           userId: 'guest',
           usfm: v.usfm,
           highlight,
-          note,
           reference: `${chapterRef}:${v.number}`,
+          verseText: v.text,
         })
       )
     )
+    setSelectedVerses(new Set())
+  }
+
+  async function handleNoteSave(note: string) {
+    await Promise.all(
+      selectedVerseObjects.map(v =>
+        upsertAnnotation.mutateAsync({
+          userId: 'guest',
+          usfm: v.usfm,
+          note,
+          reference: `${chapterRef}:${v.number}`,
+          verseText: v.text,
+        })
+      )
+    )
+    setNoteModalOpen(false)
     setSelectedVerses(new Set())
   }
 
@@ -247,12 +266,21 @@ export function BiblePage() {
       <VerseAnnotationModal
         open={annotationOpen}
         verses={selectedVerseObjects}
-        chapterRef={chapterQuery.data?.reference ?? `${book} ${chapterNum}`}
+        chapterRef={chapterRef}
         existingAnnotation={existingAnnotation}
-        isSaving={upsertAnnotation.isPending}
         onClose={() => setSelectedVerses(new Set())}
-        onSave={handleAnnotationSave}
+        onHighlight={handleHighlightSelect}
+        onNote={() => setNoteModalOpen(true)}
         onAskAI={handleAskAI}
+      />
+
+      <NoteInputModal
+        open={noteModalOpen}
+        label={chapterRef}
+        existingNote={existingAnnotation?.note}
+        isSaving={upsertAnnotation.isPending}
+        onClose={() => setNoteModalOpen(false)}
+        onSave={handleNoteSave}
       />
 
       <ChapterPicker

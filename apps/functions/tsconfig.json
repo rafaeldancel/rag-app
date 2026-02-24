@@ -5,7 +5,10 @@
     "moduleResolution": "bundler",
     "target": "ES2022",
     "outDir": "./lib",
-    "rootDir": "./src"
+    "paths": {
+      "@repo/shared": ["../../packages/shared/src/index.ts"],
+      "@repo/shared/*": ["../../packages/shared/src/*"]
+    }
   },
   "include": ["src"]
 }

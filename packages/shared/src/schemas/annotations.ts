@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 // ─── Shared types ─────────────────────────────────────────────────────────────
 
-export const HighlightColorSchema = z.enum(['yellow', 'blue', 'green']).nullable()
+export const HighlightColorSchema = z.enum(['yellow', 'red', 'blue', 'green']).nullable()
 
 // ─── Input schemas ────────────────────────────────────────────────────────────
 
@@ -14,6 +14,8 @@ export const UpsertAnnotationInputSchema = z.object({
   note: z.string().max(2000).optional(),
   /** Human-readable reference, e.g. "John 3:16" */
   reference: z.string().optional(),
+  /** The verse text itself, for display in Diary tabs */
+  verseText: z.string().optional(),
 })
 
 export const GetAnnotationsInputSchema = z.object({
@@ -40,6 +42,7 @@ export const AnnotationSchema = z.object({
   highlight: HighlightColorSchema,
   note: z.string().nullable(),
   reference: z.string().nullable(),
+  verseText: z.string().nullable(),
   createdAt: z.number(),
 })
 

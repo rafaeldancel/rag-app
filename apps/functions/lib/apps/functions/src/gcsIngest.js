@@ -1,0 +1,33 @@
+import * as admin from 'firebase-admin';
+import { onObjectFinalized } from 'firebase-functions/v2/storage';
+import { Storage } from '@google-cloud/storage';
+import { chunkText } from './chunking';
+import { embedTexts } from './embeddings';
+import { batchStoreChunks } from './firestoreSearch';
+const storage = new Storage();
+export const ingestFromGcs = onObjectFinalized({
+    region: 'us-central1',
+    bucket: 'logos-91c8e-rag-docs',
+}, async (event) => {
+    const db = admin.firestore();
+    const filePath = event.data.name;
+    const bucketName = event.data.bucket;
+    if (!filePath.match(/\.(txt|md|json)$/)) {
+        console.log(`Skipping unsupported file type: ${filePath}`);
+        return;
+    }
+    const file = storage.bucket(bucketName).file(filePath);
+    const [contents] = await file.download();
+    const raw = contents.toString('utf-8');
+    const docRef = await db.collection('docs').add({
+        sourceType: 'gcs',
+        sourceUri: `gs://${bucketName}/${filePath}`,
+        title: filePath.split('/').pop() ?? filePath,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    const chunks = chunkText(raw);
+    const vectors = await embedTexts(chunks);
+    await batchStoreChunks(docRef.id, chunks.map((text, i) => ({ text, vector: vectors[i] })));
+    console.log(`Ingested ${chunks.length} chunks from ${filePath}`);
+});

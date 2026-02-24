@@ -1,7 +1,7 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { SegmentedControl } from '../components/diary/SegmentedControl'
-import { MentorInsightCard } from '../components/diary/MentorInsightCard'
 import { DiaryEntryCard } from '../components/diary/DiaryEntryCard'
 import { DiaryComposer } from '../components/diary/DiaryComposer'
 import { HighlightCard } from '../components/diary/HighlightCard'
@@ -47,7 +47,11 @@ function AnnotationSkeleton() {
 }
 
 export function DiaryPage() {
-  const [tab, setTab] = useState('diary')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tab = searchParams.get('tab') ?? 'diary'
+  function setTab(value: string) {
+    setSearchParams({ tab: value }, { replace: true })
+  }
   const [composerOpen, setComposerOpen] = useState(false)
   const [editing, setEditing] = useState<DiaryEntry | null>(null)
 
@@ -85,8 +89,6 @@ export function DiaryPage() {
     await deleteMutation.mutateAsync({ userId: 'guest', id })
   }
 
-  const latestInsight = entriesQuery.data?.[0]?.aiInsight
-
   function formatDate(ms: number) {
     return new Date(ms).toLocaleDateString('en-US', {
       month: 'short',
@@ -107,14 +109,6 @@ export function DiaryPage() {
         {/* ── Diary tab ── */}
         {tab === 'diary' && (
           <>
-            {latestInsight && (
-              <MentorInsightCard
-                summary={latestInsight.text}
-                verseReference={latestInsight.verseRef}
-                verseText={latestInsight.verseText}
-              />
-            )}
-
             {entriesQuery.isLoading && (
               <>
                 <EntrySkeleton />
@@ -136,23 +130,15 @@ export function DiaryPage() {
             )}
 
             {entriesQuery.data?.map(entry => (
-              <div key={entry.id} className="space-y-2">
-                <DiaryEntryCard
-                  title={entry.title}
-                  body={entry.text}
-                  dateTime={formatDate(entry.createdAt)}
-                  onEdit={() => openComposer(entry)}
-                  onDelete={() => handleDelete(entry.id)}
-                />
-                {entry.aiInsight && (
-                  <MentorInsightCard
-                    summary={entry.aiInsight.text}
-                    verseReference={entry.aiInsight.verseRef}
-                    verseText={entry.aiInsight.verseText}
-                    className="mx-8 mt-0"
-                  />
-                )}
-              </div>
+              <DiaryEntryCard
+                key={entry.id}
+                title={entry.title}
+                body={entry.text}
+                dateTime={formatDate(entry.createdAt)}
+                aiInsight={entry.aiInsight}
+                onEdit={() => openComposer(entry)}
+                onDelete={() => handleDelete(entry.id)}
+              />
             ))}
           </>
         )}
@@ -186,6 +172,7 @@ export function DiaryPage() {
                 usfm={a.usfm}
                 reference={a.reference ?? a.usfm}
                 note={a.note!}
+                verseText={a.verseText}
                 createdAt={a.createdAt}
                 isSaving={upsertAnnotation.isPending}
                 onSave={newNote =>
@@ -230,6 +217,7 @@ export function DiaryPage() {
                 usfm={a.usfm}
                 reference={a.reference ?? a.usfm}
                 highlight={a.highlight!}
+                verseText={a.verseText}
                 createdAt={a.createdAt}
                 onDelete={() => deleteAnnotation.mutateAsync({ userId: 'guest', usfm: a.usfm })}
               />
