@@ -13,8 +13,26 @@ export interface BookEntry {
   /** Publication year, e.g. "2008" or "c. 93 CE" for ancient works */
   year: string
   publisher: string
-  /** Public link — Goodreads, Project Gutenberg, Bible Gateway, etc. */
+  /**
+   * Public link to find/read the source.
+   * Modern books → Google Books search (guaranteed to show book + preview).
+   * Public domain → Project Gutenberg search.
+   * Historical letter → Wikipedia.
+   * Bible → Bible Gateway.
+   */
   url?: string
+}
+
+// Helper: builds a Google Books search URL that always resolves correctly.
+function gbooks(title: string, author: string): string {
+  return `https://books.google.com/books?q=intitle:${encodeURIComponent(
+    `"${title}"`
+  )}+inauthor:${encodeURIComponent(author)}`
+}
+
+// Helper: builds a Project Gutenberg search URL for public-domain works.
+function gutenberg(query: string): string {
+  return `https://www.gutenberg.org/ebooks/search/?query=${encodeURIComponent(query)}`
 }
 
 export const BOOK_CATALOG: Record<string, BookEntry> = {
@@ -25,7 +43,7 @@ export const BOOK_CATALOG: Record<string, BookEntry> = {
     authorFormatted: 'Craig, W. L.',
     year: '2008',
     publisher: 'Crossway',
-    url: 'https://www.goodreads.com/book/show/61698.Reasonable_Faith',
+    url: gbooks('Reasonable Faith', 'Craig'),
   },
   'meyer_return-of-god-hypothesis': {
     fullTitle:
@@ -33,35 +51,35 @@ export const BOOK_CATALOG: Record<string, BookEntry> = {
     authorFormatted: 'Meyer, S. C.',
     year: '2021',
     publisher: 'HarperOne',
-    url: 'https://www.goodreads.com/book/show/49664539-return-of-the-god-hypothesis',
+    url: gbooks('Return of the God Hypothesis', 'Meyer'),
   },
   'knechtle_give-me-an-answer': {
     fullTitle: 'Give Me an Answer',
     authorFormatted: 'Knechtle, C.',
     year: '1986',
     publisher: 'InterVarsity Press',
-    url: 'https://www.goodreads.com/book/show/2127174.Give_Me_an_Answer',
+    url: gbooks('Give Me an Answer', 'Knechtle'),
   },
   'dawkins_god-delusion': {
     fullTitle: 'The God Delusion',
     authorFormatted: 'Dawkins, R.',
     year: '2006',
     publisher: 'Houghton Mifflin',
-    url: 'https://www.goodreads.com/book/show/14743.The_God_Delusion',
+    url: gbooks('The God Delusion', 'Dawkins'),
   },
   'hitchens_god-is-not-great': {
     fullTitle: 'God Is Not Great: How Religion Poisons Everything',
     authorFormatted: 'Hitchens, C.',
     year: '2007',
     publisher: 'Twelve',
-    url: 'https://www.goodreads.com/book/show/105300.God_Is_Not_Great',
+    url: gbooks('God Is Not Great', 'Hitchens'),
   },
   'russell_why-i-am-not-christian': {
     fullTitle: 'Why I Am Not a Christian and Other Essays on Religion and Related Subjects',
     authorFormatted: 'Russell, B.',
     year: '1957',
     publisher: 'Simon & Schuster',
-    url: 'https://archive.org/details/whyiamnotachrist0000russ',
+    url: gbooks('Why I Am Not a Christian', 'Russell'),
   },
 
   // ── Tier 1: History & Provenance ─────────────────────────────────────────
@@ -71,55 +89,56 @@ export const BOOK_CATALOG: Record<string, BookEntry> = {
     authorFormatted: 'Wright, N. T.',
     year: '2003',
     publisher: 'Fortress Press',
-    url: 'https://www.goodreads.com/book/show/182163.The_Resurrection_of_the_Son_of_God',
+    url: gbooks('The Resurrection of the Son of God', 'Wright'),
   },
   'blomberg_historical-reliability-nt': {
     fullTitle: 'The Historical Reliability of the New Testament',
     authorFormatted: 'Blomberg, C. L.',
     year: '2016',
     publisher: 'B&H Academic',
-    url: 'https://www.goodreads.com/book/show/28243566-the-historical-reliability-of-the-new-testament',
+    url: gbooks('The Historical Reliability of the New Testament', 'Blomberg'),
   },
   'smith_was-the-tomb-empty': {
     fullTitle: 'Was the Tomb Empty?',
     authorFormatted: 'Smith, R. S.',
     year: '2016',
     publisher: 'Christian Focus Publications',
-    url: 'https://www.goodreads.com/book/show/29430786-was-the-tomb-empty',
+    url: gbooks('Was the Tomb Empty', 'Smith'),
   },
   'josephus_antiquities-of-the-jews': {
     fullTitle: 'Antiquities of the Jews',
     authorFormatted: 'Josephus, F.',
     year: 'c. 93 CE',
     publisher: 'Trans. W. Whiston',
-    url: 'https://www.gutenberg.org/ebooks/2848',
+    url: gutenberg('antiquities of the jews josephus'),
   },
   'tacitus_annals-of-imperial-rome': {
     fullTitle: 'The Annals of Imperial Rome',
     authorFormatted: 'Tacitus, C.',
     year: 'c. 117 CE',
     publisher: 'Trans. M. Grant',
-    url: 'https://www.gutenberg.org/ebooks/10890',
+    url: gutenberg('annals tacitus'),
   },
   'suetonius_lives-of-the-caesars': {
     fullTitle: 'The Lives of the Twelve Caesars',
     authorFormatted: 'Suetonius, G. T.',
     year: 'c. 121 CE',
     publisher: 'Trans. A. Thomson',
-    url: 'https://www.gutenberg.org/ebooks/6400',
+    url: gutenberg('lives of the twelve caesars suetonius'),
   },
   pliny_letters: {
     fullTitle: 'Letters',
     authorFormatted: 'Pliny the Younger',
     year: 'c. 100 CE',
     publisher: 'Trans. W. Melmoth',
-    url: 'https://www.gutenberg.org/ebooks/2811',
+    url: gutenberg('letters pliny younger'),
   },
   'mara-bar-serapion_letter-to-serapion': {
     fullTitle: 'Letter to His Son Serapion',
     authorFormatted: 'Mara bar Serapion',
     year: 'c. 73 CE',
     publisher: 'Historical document',
+    // Short letter — Wikipedia has the full text and scholarly context
     url: 'https://en.wikipedia.org/wiki/Mara_bar_Serapion',
   },
   'ehrman_misquoting-jesus-and-jesus-interrupted': {
@@ -127,7 +146,7 @@ export const BOOK_CATALOG: Record<string, BookEntry> = {
     authorFormatted: 'Ehrman, B. D.',
     year: '2005–2009',
     publisher: 'HarperOne',
-    url: 'https://www.goodreads.com/author/show/1479785.Bart_D_Ehrman',
+    url: gbooks('Misquoting Jesus', 'Ehrman'),
   },
 
   // ── Tier 2: Ethics & Meaning ─────────────────────────────────────────────
@@ -137,35 +156,35 @@ export const BOOK_CATALOG: Record<string, BookEntry> = {
     authorFormatted: 'Frankl, V. E.',
     year: '1959',
     publisher: 'Beacon Press',
-    url: 'https://www.goodreads.com/book/show/4069.Man_s_Search_for_Meaning',
+    url: gbooks("Man's Search for Meaning", 'Frankl'),
   },
   'lewis_abolition-of-man': {
     fullTitle: 'The Abolition of Man',
     authorFormatted: 'Lewis, C. S.',
     year: '1943',
     publisher: 'Oxford University Press',
-    url: 'https://www.goodreads.com/book/show/209736.The_Abolition_of_Man',
+    url: gbooks('The Abolition of Man', 'Lewis'),
   },
   'nietzsche_thus-spoke-zarathustra': {
     fullTitle: 'Thus Spoke Zarathustra: A Book for All and None',
     authorFormatted: 'Nietzsche, F.',
     year: '1885',
     publisher: 'Trans. W. Kaufmann. Penguin',
-    url: 'https://www.gutenberg.org/ebooks/1998',
+    url: gutenberg('thus spoke zarathustra nietzsche'),
   },
   'camus_myth-of-sisyphus': {
     fullTitle: 'The Myth of Sisyphus',
     authorFormatted: 'Camus, A.',
     year: '1942',
     publisher: "Trans. J. O'Brien. Vintage",
-    url: 'https://www.goodreads.com/book/show/11987.The_Myth_of_Sisyphus_and_Other_Essays',
+    url: gbooks('The Myth of Sisyphus', 'Camus'),
   },
   'sartre_existentialism-and-humanism': {
     fullTitle: 'Existentialism and Humanism',
     authorFormatted: 'Sartre, J.-P.',
     year: '1946',
     publisher: 'Trans. P. Mairet. Methuen',
-    url: 'https://www.goodreads.com/book/show/51985.Existentialism_and_Human_Emotions',
+    url: gbooks('Existentialism and Humanism', 'Sartre'),
   },
 
   // ── Bible ────────────────────────────────────────────────────────────────
@@ -175,7 +194,7 @@ export const BOOK_CATALOG: Record<string, BookEntry> = {
     authorFormatted: 'Biblica',
     year: '2011',
     publisher: 'Zondervan',
-    url: 'https://www.biblegateway.com',
+    url: 'https://www.biblegateway.com/versions/New-International-Version-NIV-Bible/',
   },
 }
 
