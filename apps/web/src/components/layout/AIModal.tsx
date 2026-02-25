@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { X, Send, Sparkles } from 'lucide-react'
+import { X, Send, Sparkles, SquarePen, Clock, ChevronLeft } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { cn } from '@repo/ui/utils'
 import { chatCallable, authReady } from '../../firebase'
@@ -11,6 +11,13 @@ type ChatState = 'idle' | 'loading' | 'answered' | 'error'
 interface Message {
   role: 'user' | 'assistant'
   text: string
+}
+
+interface Conversation {
+  id: string
+  createdAt: number
+  title: string
+  messages: Message[]
 }
 
 // ─── Markdown renderer ────────────────────────────────────────────────────────
@@ -50,6 +57,20 @@ const SUGGESTED_PROMPTS = [
   'A prayer for when I feel anxious',
 ]
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatDate(ts: number): string {
+  const date = new Date(ts)
+  const now = new Date()
+  const diffMs = now.getTime() - ts
+  const dayMs = 86_400_000
+  if (diffMs < dayMs && now.getDate() === date.getDate()) return 'Today'
+  if (diffMs < 2 * dayMs) return 'Yesterday'
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+const MAX_HISTORY = 20
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 interface AIModalProps {
@@ -76,14 +97,28 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
       return 'idle'
     }
   })
+  const [conversations, setConversations] = useState<Conversation[]>(() => {
+    try {
+      const saved = localStorage.getItem('ai.history')
+      return saved ? (JSON.parse(saved) as Conversation[]) : []
+    } catch {
+      return []
+    }
+  })
+  const [view, setView] = useState<'chat' | 'history'>('chat')
   const [input, setInput] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  // Persist messages across page suspensions (sleep/wake)
+  // Persist current messages across page suspensions (sleep/wake)
   useEffect(() => {
     sessionStorage.setItem('ai.messages', JSON.stringify(messages))
   }, [messages])
+
+  // Persist history to localStorage
+  useEffect(() => {
+    localStorage.setItem('ai.history', JSON.stringify(conversations))
+  }, [conversations])
 
   // Seed input and focus when opening
   useEffect(() => {
@@ -106,6 +141,35 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
   function autoResize(el: HTMLTextAreaElement) {
     el.style.height = 'auto'
     el.style.height = `${Math.min(el.scrollHeight, 120)}px`
+  }
+
+  // Save current conversation to history (if it has messages)
+  function saveCurrentToHistory(currentMessages: Message[]) {
+    if (currentMessages.length === 0) return
+    const title = currentMessages.find(m => m.role === 'user')?.text.slice(0, 60) ?? 'Conversation'
+    const entry: Conversation = {
+      id: crypto.randomUUID(),
+      createdAt: Date.now(),
+      title,
+      messages: currentMessages,
+    }
+    setConversations(prev => [entry, ...prev].slice(0, MAX_HISTORY))
+  }
+
+  function startNewChat() {
+    saveCurrentToHistory(messages)
+    setMessages([])
+    setChatState('idle')
+    setInput('')
+    setView('chat')
+  }
+
+  function restoreConversation(conv: Conversation) {
+    saveCurrentToHistory(messages)
+    setMessages(conv.messages)
+    setChatState('answered')
+    setConversations(prev => prev.filter(c => c.id !== conv.id))
+    setView('chat')
   }
 
   async function handleSend() {
@@ -144,132 +208,209 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
 
   return (
     <>
-      {/* Invisible overlay for click-outside dismiss — no tint so content stays visible */}
+      {/* Invisible overlay for click-outside dismiss */}
       <div className="absolute inset-0 z-20" onClick={onClose} aria-hidden="true" />
 
-      {/* Floating chat panel — inset-x-3 gives side margins for the chat-head feel */}
+      {/* Floating chat panel */}
       <div
         role="dialog"
         aria-label="Logos AI assistant"
-        className="absolute inset-x-3 bottom-[84px] z-30 flex flex-col rounded-2xl border bg-background shadow-2xl"
-        style={{ maxHeight: 'calc(68vh - 72px)' }}
+        className="absolute inset-x-3 bottom-[112px] z-30 flex flex-col rounded-2xl border bg-background shadow-2xl"
+        style={{ maxHeight: 'calc(68vh - 100px)' }}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold text-foreground">Logos AI</span>
-          </div>
-          <button
-            onClick={onClose}
-            aria-label="Close AI assistant"
-            className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-muted"
-          >
-            <X className="h-4 w-4 text-muted-foreground" />
-          </button>
-        </div>
-
-        {/* Message area */}
-        <div className="min-h-0 flex-1 overflow-y-auto scrollbar-none px-4 pb-2 space-y-3">
-          {/* Empty state + suggested prompts */}
-          {chatState === 'idle' && messages.length === 0 && (
-            <div className="flex flex-col items-center gap-4 py-6">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                <Sparkles className="h-6 w-6 text-primary" />
-              </div>
-              <div className="text-center">
-                <p className="text-sm font-semibold text-foreground">How can I help you today?</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Ask anything about scripture, faith, or prayer.
-                </p>
-              </div>
-              <div className="flex w-full flex-col gap-2">
-                {SUGGESTED_PROMPTS.map(prompt => (
-                  <button
-                    key={prompt}
-                    onClick={() => {
-                      setInput(prompt)
-                      setTimeout(() => {
-                        const el = inputRef.current
-                        if (el) {
-                          el.focus()
-                          autoResize(el)
-                        }
-                      }, 0)
-                    }}
-                    className="rounded-xl border bg-muted/50 px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted"
-                  >
-                    {prompt}
-                  </button>
-                ))}
-              </div>
+        {view === 'history' ? (
+          // ── History panel ──────────────────────────────────────────────────
+          <>
+            <div className="flex items-center gap-2 px-4 py-3 border-b">
+              <button
+                onClick={() => setView('chat')}
+                aria-label="Back to chat"
+                className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-muted"
+              >
+                <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+              </button>
+              <Clock className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold text-foreground">History</span>
             </div>
-          )}
 
-          {/* Message thread */}
-          {messages.map((msg, i) => (
-            <div
-              key={i}
-              className={cn('flex', msg.role === 'user' ? 'justify-end' : 'justify-start')}
-            >
-              {msg.role === 'user' ? (
-                <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-sm leading-relaxed text-primary-foreground">
-                  {msg.text}
+            <div className="min-h-0 flex-1 overflow-y-auto scrollbar-none">
+              {conversations.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-2 py-12 text-center px-6">
+                  <Clock className="h-8 w-8 text-muted-foreground/40" />
+                  <p className="text-sm text-muted-foreground">No past conversations yet.</p>
+                  <p className="text-xs text-muted-foreground/70">
+                    Start a new chat and it will appear here.
+                  </p>
                 </div>
               ) : (
-                <div className="max-w-[88%] rounded-2xl rounded-bl-sm bg-muted px-4 py-3 text-foreground">
-                  <ReactMarkdown components={MD}>{msg.text}</ReactMarkdown>
-                </div>
+                <ul className="divide-y">
+                  {conversations.map(conv => (
+                    <li key={conv.id}>
+                      <button
+                        onClick={() => restoreConversation(conv)}
+                        className="w-full px-4 py-3 text-left transition-colors hover:bg-muted/60 flex flex-col gap-0.5"
+                      >
+                        <span className="text-sm font-medium text-foreground line-clamp-2 leading-snug">
+                          {conv.title}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {formatDate(conv.createdAt)} · {(conv.messages.length / 2) | 0}{' '}
+                          {conv.messages.length / 2 === 1 ? 'exchange' : 'exchanges'}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
-          ))}
-
-          {/* Typing indicator */}
-          {chatState === 'loading' && (
-            <div className="flex justify-start">
-              <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm bg-muted px-4 py-3">
-                {[0, 1, 2].map(i => (
-                  <span
-                    key={i}
-                    className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce"
-                    style={{ animationDelay: `${i * 150}ms` }}
-                  />
-                ))}
+          </>
+        ) : (
+          // ── Chat panel ─────────────────────────────────────────────────────
+          <>
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground">Logos AI</span>
+              </div>
+              <div className="flex items-center gap-1">
+                {/* History button */}
+                <button
+                  onClick={() => setView('history')}
+                  aria-label="Chat history"
+                  className="relative flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-muted"
+                >
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  {conversations.length > 0 && (
+                    <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-primary" />
+                  )}
+                </button>
+                {/* New chat button — only visible when there are messages */}
+                {messages.length > 0 && (
+                  <button
+                    onClick={startNewChat}
+                    aria-label="New chat"
+                    className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-muted"
+                  >
+                    <SquarePen className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                )}
+                {/* Close */}
+                <button
+                  onClick={onClose}
+                  aria-label="Close AI assistant"
+                  className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-muted"
+                >
+                  <X className="h-4 w-4 text-muted-foreground" />
+                </button>
               </div>
             </div>
-          )}
 
-          <div ref={bottomRef} />
-        </div>
+            {/* Message area */}
+            <div className="min-h-0 flex-1 overflow-y-auto scrollbar-none px-4 pb-2 space-y-3">
+              {/* Empty state + suggested prompts */}
+              {chatState === 'idle' && messages.length === 0 && (
+                <div className="flex flex-col items-center gap-4 py-6">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                    <Sparkles className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-foreground">
+                      How can I help you today?
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Ask anything about scripture, faith, or prayer.
+                    </p>
+                  </div>
+                  <div className="flex w-full flex-col gap-2">
+                    {SUGGESTED_PROMPTS.map(prompt => (
+                      <button
+                        key={prompt}
+                        onClick={() => {
+                          setInput(prompt)
+                          setTimeout(() => {
+                            const el = inputRef.current
+                            if (el) {
+                              el.focus()
+                              autoResize(el)
+                            }
+                          }, 0)
+                        }}
+                        className="rounded-xl border bg-muted/50 px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-        {/* Input bar */}
-        <div className="flex items-end gap-2 border-t px-4 py-3">
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={e => {
-              setInput(e.target.value)
-              autoResize(e.target)
-            }}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask about scripture, prayer…"
-            rows={1}
-            className="flex-1 resize-none overflow-y-auto scrollbar-none rounded-xl border bg-muted px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
-          />
-          <button
-            onClick={handleSend}
-            disabled={!input.trim() || chatState === 'loading'}
-            aria-label="Send message"
-            className={cn(
-              'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors',
-              input.trim() && chatState !== 'loading'
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground cursor-not-allowed'
-            )}
-          >
-            <Send className="h-4 w-4" />
-          </button>
-        </div>
+              {/* Message thread */}
+              {messages.map((msg, i) => (
+                <div
+                  key={i}
+                  className={cn('flex', msg.role === 'user' ? 'justify-end' : 'justify-start')}
+                >
+                  {msg.role === 'user' ? (
+                    <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-sm leading-relaxed text-primary-foreground">
+                      {msg.text}
+                    </div>
+                  ) : (
+                    <div className="max-w-[88%] rounded-2xl rounded-bl-sm bg-muted px-4 py-3 text-foreground">
+                      <ReactMarkdown components={MD}>{msg.text}</ReactMarkdown>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {/* Typing indicator */}
+              {chatState === 'loading' && (
+                <div className="flex justify-start">
+                  <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm bg-muted px-4 py-3">
+                    {[0, 1, 2].map(i => (
+                      <span
+                        key={i}
+                        className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce"
+                        style={{ animationDelay: `${i * 150}ms` }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div ref={bottomRef} />
+            </div>
+
+            {/* Input bar */}
+            <div className="flex items-end gap-2 border-t px-4 py-3">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={e => {
+                  setInput(e.target.value)
+                  autoResize(e.target)
+                }}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask about scripture, prayer…"
+                rows={1}
+                className="flex-1 resize-none overflow-y-auto scrollbar-none rounded-xl border bg-muted px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
+              />
+              <button
+                onClick={handleSend}
+                disabled={!input.trim() || chatState === 'loading'}
+                aria-label="Send message"
+                className={cn(
+                  'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors',
+                  input.trim() && chatState !== 'loading'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground cursor-not-allowed'
+                )}
+              >
+                <Send className="h-4 w-4" />
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </>
   )
