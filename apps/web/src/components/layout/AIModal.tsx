@@ -8,9 +8,20 @@ import { chatCallable, authReady } from '../../firebase'
 
 type ChatState = 'idle' | 'loading' | 'answered' | 'error'
 
+interface SourceRef {
+  sourceNo: number
+  fullTitle?: string
+  authorFormatted?: string
+  year?: string
+  publisher?: string
+  url?: string
+  apa?: string
+}
+
 interface Message {
   role: 'user' | 'assistant'
   text: string
+  sources?: SourceRef[]
 }
 
 interface Conversation {
@@ -47,6 +58,60 @@ const MD: React.ComponentProps<typeof ReactMarkdown>['components'] = {
       {children}
     </code>
   ),
+}
+
+// ─── Sources footer ───────────────────────────────────────────────────────────
+
+function SourcesFooter({ sources }: { sources: SourceRef[] }) {
+  const [open, setOpen] = useState(false)
+  if (sources.length === 0) return null
+
+  return (
+    <div className="mt-1.5">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <span>{open ? '▾' : '▸'}</span>
+        <span>
+          {sources.length} {sources.length === 1 ? 'source' : 'sources'}
+        </span>
+      </button>
+
+      {open && (
+        <ol className="mt-2 space-y-2 border-l-2 border-muted pl-3">
+          {sources.map(s => (
+            <li key={s.sourceNo} className="text-xs leading-snug text-muted-foreground">
+              {s.apa ? (
+                <>
+                  <span className="italic">{s.fullTitle}</span>
+                  {'. '}
+                  {s.authorFormatted} ({s.year}). {s.publisher}.
+                </>
+              ) : (
+                <span className="italic">
+                  {s.fullTitle ?? s.authorFormatted ?? 'Unknown source'}
+                </span>
+              )}
+              {s.url && (
+                <>
+                  {' '}
+                  <a
+                    href={s.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-0.5 text-primary underline-offset-2 hover:underline"
+                  >
+                    Read ↗
+                  </a>
+                </>
+              )}
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  )
 }
 
 // ─── Suggested prompts ────────────────────────────────────────────────────────
@@ -184,8 +249,11 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
     try {
       await authReady
       const resp = await chatCallable({ question: text, profile: 'bible-study' })
-      const data = resp.data as { answer?: string }
-      setMessages(prev => [...prev, { role: 'assistant', text: data.answer ?? '(no response)' }])
+      const data = resp.data as { answer?: string; sources?: SourceRef[] }
+      setMessages(prev => [
+        ...prev,
+        { role: 'assistant', text: data.answer ?? '(no response)', sources: data.sources },
+      ])
       setChatState('answered')
     } catch (e) {
       console.error('Chat error:', e)
@@ -356,8 +424,13 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
                       {msg.text}
                     </div>
                   ) : (
-                    <div className="max-w-[88%] rounded-2xl rounded-bl-sm bg-muted px-4 py-3 text-foreground">
-                      <ReactMarkdown components={MD}>{msg.text}</ReactMarkdown>
+                    <div className="max-w-[88%] flex flex-col">
+                      <div className="rounded-2xl rounded-bl-sm bg-muted px-4 py-3 text-foreground">
+                        <ReactMarkdown components={MD}>{msg.text}</ReactMarkdown>
+                      </div>
+                      {msg.sources && msg.sources.length > 0 && (
+                        <SourcesFooter sources={msg.sources} />
+                      )}
                     </div>
                   )}
                 </div>

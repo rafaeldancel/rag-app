@@ -1,9 +1,14 @@
 import * as admin from 'firebase-admin'
 import { onObjectFinalized } from 'firebase-functions/v2/storage'
 import { Storage } from '@google-cloud/storage'
+import { createRequire } from 'module'
 import { chunkText } from './chunking'
 import { embedTexts } from './embeddings'
 import { batchStoreChunks } from './firestoreSearch'
+
+// createRequire lets us load the pdf-parse internal module directly, bypassing
+// its startup self-test which breaks on Node 22 (module.parent is deprecated).
+const _require = createRequire(import.meta.url)
 
 const storage = new Storage()
 
@@ -45,7 +50,7 @@ function parseFilename(filePath: string): DocMetadata {
 // ── PDF text extraction ────────────────────────────────────────────
 
 async function extractTextFromPdf(buffer: Buffer): Promise<string> {
-  const pdfParse = require('pdf-parse/lib/pdf-parse')
+  const pdfParse = _require('pdf-parse/lib/pdf-parse') as (buf: Buffer) => Promise<{ text: string }>
   const data = await pdfParse(buffer)
   return data.text
 }

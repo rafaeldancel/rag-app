@@ -9,9 +9,17 @@ await build({
   platform: 'node',
   target: 'node22',
   format: 'cjs',
-  external: ['firebase-admin', 'firebase-functions', '@google-cloud/storage', '@google/genai'],
+  external: ['firebase-admin', 'firebase-functions', '@google-cloud/storage', '@google/genai', 'pdf-parse'],
   alias: {
     '@repo/shared': path.resolve('../../packages/shared/src/index.ts'),
+  },
+  // In CJS output, import.meta.url is empty. Inject the CJS equivalent at the
+  // top of the bundle so createRequire(import.meta.url) works at runtime.
+  banner: {
+    js: "const __importMetaUrl = require('url').pathToFileURL(__filename).href;",
+  },
+  define: {
+    'import.meta.url': '__importMetaUrl',
   },
 })
 
@@ -29,6 +37,7 @@ const deployPkg = {
     'firebase-functions': pkg.dependencies['firebase-functions'],
     '@google-cloud/storage': pkg.dependencies['@google-cloud/storage'],
     '@google/genai': pkg.dependencies['@google/genai'],
+    'pdf-parse': pkg.dependencies['pdf-parse'],
   },
 }
 writeFileSync('dist/package.json', JSON.stringify(deployPkg, null, 2))
