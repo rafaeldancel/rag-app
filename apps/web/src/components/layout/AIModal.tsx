@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import { X, Send, Sparkles, SquarePen, Clock, ChevronLeft } from 'lucide-react'
+import { X, Send, Sparkles, SquarePen, Clock, ChevronLeft, Trash2 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { cn } from '@repo/ui/utils'
 import { chatCallable, authReady } from '../../firebase'
+import { Tooltip } from '../atoms/Tooltip'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -313,10 +314,10 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
               ) : (
                 <ul className="divide-y">
                   {conversations.map(conv => (
-                    <li key={conv.id}>
+                    <li key={conv.id} className="group flex items-stretch">
                       <button
                         onClick={() => restoreConversation(conv)}
-                        className="w-full px-4 py-3 text-left transition-colors hover:bg-muted/60 flex flex-col gap-0.5"
+                        className="min-w-0 flex-1 px-4 py-3 text-left transition-colors hover:bg-muted/60 flex flex-col gap-0.5"
                       >
                         <span className="text-sm font-medium text-foreground line-clamp-2 leading-snug">
                           {conv.title}
@@ -325,6 +326,13 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
                           {formatDate(conv.createdAt)} · {(conv.messages.length / 2) | 0}{' '}
                           {conv.messages.length / 2 === 1 ? 'exchange' : 'exchanges'}
                         </span>
+                      </button>
+                      <button
+                        onClick={() => setConversations(prev => prev.filter(c => c.id !== conv.id))}
+                        aria-label="Delete conversation"
+                        className="flex w-10 shrink-0 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive text-muted-foreground"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </li>
                   ))}
@@ -343,34 +351,40 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
               </div>
               <div className="flex items-center gap-1">
                 {/* History button */}
-                <button
-                  onClick={() => setView('history')}
-                  aria-label="Chat history"
-                  className="relative flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-muted"
-                >
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  {conversations.length > 0 && (
-                    <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-primary" />
-                  )}
-                </button>
+                <Tooltip label="History" side="bottom">
+                  <button
+                    onClick={() => setView('history')}
+                    aria-label="Chat history"
+                    className="relative flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-muted"
+                  >
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    {conversations.length > 0 && (
+                      <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-primary" />
+                    )}
+                  </button>
+                </Tooltip>
                 {/* New chat button — only visible when there are messages */}
                 {messages.length > 0 && (
-                  <button
-                    onClick={startNewChat}
-                    aria-label="New chat"
-                    className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-muted"
-                  >
-                    <SquarePen className="h-4 w-4 text-muted-foreground" />
-                  </button>
+                  <Tooltip label="New chat" side="bottom">
+                    <button
+                      onClick={startNewChat}
+                      aria-label="New chat"
+                      className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-muted"
+                    >
+                      <SquarePen className="h-4 w-4 text-muted-foreground" />
+                    </button>
+                  </Tooltip>
                 )}
                 {/* Close */}
-                <button
-                  onClick={onClose}
-                  aria-label="Close AI assistant"
-                  className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-muted"
-                >
-                  <X className="h-4 w-4 text-muted-foreground" />
-                </button>
+                <Tooltip label="Close" side="bottom">
+                  <button
+                    onClick={onClose}
+                    aria-label="Close AI assistant"
+                    className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-muted"
+                  >
+                    <X className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                </Tooltip>
               </div>
             </div>
 

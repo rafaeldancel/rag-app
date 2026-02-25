@@ -1,5 +1,6 @@
 import { ChevronDown, Search, Settings } from 'lucide-react'
 import { cn } from '@repo/ui/utils'
+import { Tooltip } from '../atoms/Tooltip'
 
 interface ReaderToolbarProps {
   translation: string
@@ -57,16 +58,24 @@ export function ReaderToolbar({
 
       {/* Right actions */}
       <div className="flex items-center gap-1">
-        <button onClick={onSearch} aria-label="Search" className="rounded-md p-1.5 hover:bg-accent">
-          <Search className="h-4 w-4 text-muted-foreground" />
-        </button>
-        <button
-          onClick={onSettings}
-          aria-label="Reader settings"
-          className="rounded-md p-1.5 hover:bg-accent"
-        >
-          <Settings className="h-4 w-4 text-muted-foreground" />
-        </button>
+        <Tooltip label="Search">
+          <button
+            onClick={onSearch}
+            aria-label="Search"
+            className="rounded-md p-1.5 hover:bg-accent"
+          >
+            <Search className="h-4 w-4 text-muted-foreground" />
+          </button>
+        </Tooltip>
+        <Tooltip label="Reader settings">
+          <button
+            onClick={onSettings}
+            aria-label="Reader settings"
+            className="rounded-md p-1.5 hover:bg-accent"
+          >
+            <Settings className="h-4 w-4 text-muted-foreground" />
+          </button>
+        </Tooltip>
       </div>
     </div>
   )
