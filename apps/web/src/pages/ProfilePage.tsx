@@ -5,15 +5,19 @@ import { UserHeader } from '../components/profile/UserHeader'
 import { StatsGrid } from '../components/profile/StatsGrid'
 import { SettingsGroup } from '../components/profile/SettingsGroup'
 import { useStreak } from '../hooks/useStreak'
+import { useReadingProgress } from '../hooks/useReadingProgress'
+import { useDiaryEntries } from '../hooks/useDiary'
 
 export function ProfilePage() {
   const { longest } = useStreak()
+  const { chaptersReadCount } = useReadingProgress()
+  const diaryQuery = useDiaryEntries()
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('darkMode') === 'true')
 
   const stats = [
     { value: longest, label: 'Longest Streak', icon: Flame },
-    { value: 87, label: 'Chapters', icon: BookOpen },
-    { value: 5, label: 'Diary Entries', icon: PenLine },
+    { value: chaptersReadCount, label: 'Chapters Read', icon: BookOpen },
+    { value: diaryQuery.data?.length ?? 0, label: 'Diary Entries', icon: PenLine },
   ]
 
   // Keep the document class in sync with state (also applies on mount)

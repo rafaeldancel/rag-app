@@ -9,6 +9,7 @@ import { NoteInputModal } from '../components/bible/NoteInputModal'
 import { useBooks } from '../hooks/useBible'
 import { useUpsertAnnotation } from '../hooks/useAnnotations'
 import { useAIModal } from '../lib/AIModalContext'
+import { useReadingProgress } from '../hooks/useReadingProgress'
 import type { HighlightColor, BibleBook } from '@repo/shared'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -55,12 +56,19 @@ export function BiblePage() {
 
   const booksQuery = useBooks(versionId)
   const upsertAnnotation = useUpsertAnnotation()
+  const { markChapterRead } = useReadingProgress()
 
   // Stable ref for books data used inside IntersectionObserver callback
   const booksDataRef = useRef<BibleBook[]>([])
   useEffect(() => {
     if (booksQuery.data) booksDataRef.current = booksQuery.data
   }, [booksQuery.data])
+
+  // Stable ref so loadNextChapter (empty-dep useCallback) can call markChapterRead
+  const markChapterReadRef = useRef(markChapterRead)
+  useEffect(() => {
+    markChapterReadRef.current = markChapterRead
+  }, [markChapterRead])
 
   // Reset everything when the URL route changes (e.g. ChapterPicker navigation)
   useEffect(() => {
@@ -88,6 +96,14 @@ export function BiblePage() {
 
   // Captured scroll height just before a prepend — used to restore position
   const scrollHeightBeforePrependRef = useRef<number | null>(null)
+
+  // Lock that prevents loadNextChapter from firing again while a chapter is still loading
+  const loadingNextRef = useRef(false)
+
+  // Release the loadNextChapter lock once the new chapter is in the DOM
+  useEffect(() => {
+    loadingNextRef.current = false
+  }, [chapters])
 
   // After prepend renders, offset scrollTop by the height of the inserted chapter
   // so the user's reading position doesn't jump.
@@ -136,6 +152,8 @@ export function BiblePage() {
   }, [loadPrevChapter])
 
   const loadNextChapter = useCallback(() => {
+    if (loadingNextRef.current) return
+
     const current = chaptersRef.current
     const last = current[current.length - 1]
     if (!last) return
@@ -154,6 +172,12 @@ export function BiblePage() {
     }
 
     if (current.some(c => c.book === nextBook && c.chapter === nextChapter)) return
+
+    loadingNextRef.current = true
+
+    // User scrolled past the last loaded chapter — mark it as read
+    markChapterReadRef.current(last.book, last.chapter)
+
     setChapters(prev => [...prev, { book: nextBook, chapter: nextChapter }])
   }, [])
 
