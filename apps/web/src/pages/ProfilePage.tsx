@@ -4,15 +4,17 @@ import { Moon, Shield, HelpCircle } from 'lucide-react'
 import { UserHeader } from '../components/profile/UserHeader'
 import { StatsGrid } from '../components/profile/StatsGrid'
 import { SettingsGroup } from '../components/profile/SettingsGroup'
-
-const STATS = [
-  { value: 21, label: 'Longest Streak', icon: Flame },
-  { value: 87, label: 'Chapters', icon: BookOpen },
-  { value: 5, label: 'Diary Entries', icon: PenLine },
-]
+import { useStreak } from '../hooks/useStreak'
 
 export function ProfilePage() {
+  const { longest } = useStreak()
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('darkMode') === 'true')
+
+  const stats = [
+    { value: longest, label: 'Longest Streak', icon: Flame },
+    { value: 87, label: 'Chapters', icon: BookOpen },
+    { value: 5, label: 'Diary Entries', icon: PenLine },
+  ]
 
   // Keep the document class in sync with state (also applies on mount)
   useEffect(() => {
@@ -27,7 +29,7 @@ export function ProfilePage() {
   return (
     <main className="flex-1 overflow-y-auto scrollbar-none space-y-6 pb-6">
       <UserHeader name="Alex Johnson" tagline="Growing in faith, one day at a time" />
-      <StatsGrid stats={STATS} />
+      <StatsGrid stats={stats} />
       <SettingsGroup
         title="Preferences"
         rows={[

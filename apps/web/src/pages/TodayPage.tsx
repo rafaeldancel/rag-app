@@ -5,6 +5,7 @@ import { DailyVerseCard } from '../components/today/DailyVerseCard'
 import { DailyPrayerCard } from '../components/today/DailyPrayerCard'
 import { Skeleton } from '../components/atoms/Skeleton'
 import { useVotd, useDailyPrayer } from '../hooks/useBible'
+import { useStreak } from '../hooks/useStreak'
 
 function VotdSkeleton() {
   return (
@@ -24,6 +25,7 @@ export function TodayPage() {
   const navigate = useNavigate()
   const votd = useVotd()
   const prayer = useDailyPrayer()
+  const { current: streakCount } = useStreak()
 
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -68,7 +70,7 @@ export function TodayPage() {
 
   return (
     <main className="flex-1 overflow-y-auto scrollbar-none space-y-4 pb-4">
-      <StreakHeader date={today} streakCount={14} />
+      <StreakHeader date={today} streakCount={streakCount} />
 
       {votd.isLoading && <VotdSkeleton />}
       {votd.isError && (

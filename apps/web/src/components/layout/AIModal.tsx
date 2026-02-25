@@ -61,6 +61,40 @@ const MD: React.ComponentProps<typeof ReactMarkdown>['components'] = {
   ),
 }
 
+// ─── Tag badge renderer ────────────────────────────────────────────────────────
+// Turns [Out of Scope] and [General Knowledge] tokens into styled visual badges.
+
+const TAG_RE = /(\[Out of Scope\])/g
+
+/** Renders the [Out of Scope] guardrail tag as a styled visual badge. */
+function OutOfScopeBadge() {
+  return (
+    <div className="my-2 flex items-center gap-1.5 rounded-lg border border-destructive/25 bg-destructive/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-destructive">
+      <span aria-hidden="true">⚠</span>
+      <span>Out of Scope</span>
+    </div>
+  )
+}
+
+/** Renders assistant message text, replacing [Out of Scope] with a styled badge. */
+function MessageText({ text }: { text: string }) {
+  const parts = text.split(TAG_RE)
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (part === '[Out of Scope]') return <OutOfScopeBadge key={i} />
+        const trimmed = part.trim()
+        if (!trimmed) return null
+        return (
+          <ReactMarkdown key={i} components={MD}>
+            {trimmed}
+          </ReactMarkdown>
+        )
+      })}
+    </>
+  )
+}
+
 // ─── Sources footer ───────────────────────────────────────────────────────────
 
 function SourcesFooter({ sources }: { sources: SourceRef[] }) {
@@ -440,7 +474,7 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
                   ) : (
                     <div className="max-w-[88%] flex flex-col">
                       <div className="rounded-2xl rounded-bl-sm bg-muted px-4 py-3 text-foreground">
-                        <ReactMarkdown components={MD}>{msg.text}</ReactMarkdown>
+                        <MessageText text={msg.text} />
                       </div>
                       {msg.sources && msg.sources.length > 0 && (
                         <SourcesFooter sources={msg.sources} />
