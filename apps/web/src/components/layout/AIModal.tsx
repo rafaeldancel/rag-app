@@ -59,34 +59,49 @@ interface AIModalProps {
 }
 
 export function AIModal({ open, onClose, initialInput }: AIModalProps) {
-  const [chatState, setChatState] = useState<ChatState>('idle')
-  const [messages, setMessages] = useState<Message[]>([])
+  const [messages, setMessages] = useState<Message[]>(() => {
+    try {
+      const saved = sessionStorage.getItem('ai.messages')
+      return saved ? (JSON.parse(saved) as Message[]) : []
+    } catch {
+      return []
+    }
+  })
+  const [chatState, setChatState] = useState<ChatState>(() => {
+    try {
+      const saved = sessionStorage.getItem('ai.messages')
+      const msgs = saved ? JSON.parse(saved) : []
+      return msgs.length > 0 ? 'answered' : 'idle'
+    } catch {
+      return 'idle'
+    }
+  })
   const [input, setInput] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  // Reset on close; seed input and focus on open
+  // Persist messages across page suspensions (sleep/wake)
   useEffect(() => {
-    if (!open) {
-      setChatState('idle')
-      setMessages([])
-      setInput('')
-    } else {
-      const seed = initialInput ?? ''
-      setInput(seed)
-      setTimeout(() => {
-        const el = inputRef.current
-        if (!el) return
-        el.focus()
-        autoResize(el)
-      }, 100)
-    }
+    sessionStorage.setItem('ai.messages', JSON.stringify(messages))
+  }, [messages])
+
+  // Seed input and focus when opening
+  useEffect(() => {
+    if (!open) return
+    const seed = initialInput ?? ''
+    setInput(seed)
+    setTimeout(() => {
+      const el = inputRef.current
+      if (!el) return
+      el.focus()
+      autoResize(el)
+    }, 100)
   }, [open, initialInput])
 
-  // Scroll to latest message
+  // Scroll to latest message (also on reopen)
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, chatState])
+  }, [messages, chatState, open])
 
   function autoResize(el: HTMLTextAreaElement) {
     el.style.height = 'auto'

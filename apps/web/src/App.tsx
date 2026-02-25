@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AppShell } from './components/layout/AppShell'
 import { BottomNav } from './components/layout/BottomNav'
@@ -25,8 +25,12 @@ function BibleRedirect() {
 }
 
 export function App() {
-  const [aiOpen, setAiOpen] = useState(false)
+  const [aiOpen, setAiOpen] = useState(() => sessionStorage.getItem('ai.open') === 'true')
   const [aiPrefill, setAiPrefill] = useState('')
+
+  useEffect(() => {
+    sessionStorage.setItem('ai.open', String(aiOpen))
+  }, [aiOpen])
 
   function openAI(prefill = '') {
     setAiPrefill(prefill)
