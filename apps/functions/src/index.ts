@@ -14,9 +14,13 @@ const db = admin.firestore()
 
 // ── Chat (RAG Pipeline) ───────────────────────────────────────────
 
-export const chat = onCall({ cors: true, region: ENV.location }, async (req) => {
+export const chat = onCall({ cors: true, region: ENV.location }, async req => {
   const question = String(req.data?.question || '').trim()
-  const profile = (req.data?.profile as PromptProfile) || 'bible-study'
+  const validProfiles: PromptProfile[] = ['bible-study', 'general', 'strict']
+  const rawProfile = String(req.data?.profile || '')
+  const profile: PromptProfile = validProfiles.includes(rawProfile as PromptProfile)
+    ? (rawProfile as PromptProfile)
+    : 'bible-study'
 
   if (!question) throw new Error('Missing question')
 
@@ -32,7 +36,7 @@ export const chat = onCall({ cors: true, region: ENV.location }, async (req) => 
 
 // ── Ingest from URL ────────────────────────────────────────────────
 
-export const ingestFromApi = onCall({ cors: true, region: 'us-central1' }, async (req) => {
+export const ingestFromApi = onCall({ cors: true, region: 'us-central1' }, async req => {
   if (!req.auth) throw new Error('Unauthorized - must be logged in')
 
   const url = String(req.data?.url || '')
@@ -53,10 +57,11 @@ export const ingestFromApi = onCall({ cors: true, region: 'us-central1' }, async
   const chunks = chunkText(raw)
   const vectors = await embedTexts(chunks)
 
-  await batchStoreChunks(
-    docRef.id,
-    chunks.map((text: string, i: number) => ({ text, vector: vectors[i] }))
-  )
+  const chunkItems = chunks.map((text: string, i: number) => ({ text, vector: vectors[i] }))
+  const BATCH_MAX = 400
+  for (let i = 0; i < chunkItems.length; i += BATCH_MAX) {
+    await batchStoreChunks(docRef.id, chunkItems.slice(i, i + BATCH_MAX), i)
+  }
 
   return { docId: docRef.id, chunkCount: chunks.length }
 })

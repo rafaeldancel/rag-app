@@ -15,8 +15,10 @@ function BibleRedirect() {
     const saved = localStorage.getItem('bible.lastPosition')
     if (saved) {
       const { book, chapter, version } = JSON.parse(saved)
-      const query = version && version !== 'NIV' ? `?v=${version}` : ''
-      return <Navigate to={`/bible/${book}/${chapter}${query}`} replace />
+      if (book && chapter) {
+        const query = version && version !== 'NIV' ? `?v=${version}` : ''
+        return <Navigate to={`/bible/${book}/${chapter}${query}`} replace />
+      }
     }
   } catch {
     // corrupted storage — fall through to default

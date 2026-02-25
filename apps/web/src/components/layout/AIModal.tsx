@@ -20,6 +20,7 @@ interface SourceRef {
 }
 
 interface Message {
+  id: string
   role: 'user' | 'assistant'
   text: string
   sources?: SourceRef[]
@@ -276,7 +277,7 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
     const text = input.trim()
     if (!text || chatState === 'loading') return
 
-    setMessages(prev => [...prev, { role: 'user', text }])
+    setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'user', text }])
     setInput('')
     if (inputRef.current) inputRef.current.style.height = 'auto'
     setChatState('loading')
@@ -287,14 +288,23 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
       const data = resp.data as { answer?: string; sources?: SourceRef[] }
       setMessages(prev => [
         ...prev,
-        { role: 'assistant', text: data.answer ?? '(no response)', sources: data.sources },
+        {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          text: data.answer ?? '(no response)',
+          sources: data.sources,
+        },
       ])
       setChatState('answered')
     } catch (e) {
       console.error('Chat error:', e)
       setMessages(prev => [
         ...prev,
-        { role: 'assistant', text: 'Something went wrong. Please try again.' },
+        {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          text: 'Something went wrong. Please try again.',
+        },
       ])
       setChatState('error')
     }
@@ -464,7 +474,7 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
               {/* Message thread */}
               {messages.map((msg, i) => (
                 <div
-                  key={i}
+                  key={msg.id ?? i}
                   className={cn('flex', msg.role === 'user' ? 'justify-end' : 'justify-start')}
                 >
                   {msg.role === 'user' ? (

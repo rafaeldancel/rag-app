@@ -43,7 +43,8 @@ async function generateInsight(text: string): Promise<AIInsight | null> {
     const json = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
     const parsed = JSON.parse(json)
     return AIInsightSchema.parse(parsed)
-  } catch {
+  } catch (err) {
+    console.error('[generateInsight] failed:', err)
     return null
   }
 }

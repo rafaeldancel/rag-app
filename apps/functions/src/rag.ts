@@ -82,13 +82,13 @@ export interface RagResult {
 }
 
 // ── Vertex AI Client ───────────────────────────────────────────────
+// Env vars set at module load; singleton avoids per-request mutation and reuses connection pool.
 
-function vertexClient(): GoogleGenAI {
-  process.env.GOOGLE_GENAI_USE_VERTEXAI = 'true'
-  process.env.GOOGLE_CLOUD_PROJECT = ENV.projectId
-  process.env.GOOGLE_CLOUD_LOCATION = ENV.location
-  return new GoogleGenAI({})
-}
+process.env.GOOGLE_GENAI_USE_VERTEXAI = 'true'
+process.env.GOOGLE_CLOUD_PROJECT = ENV.projectId
+process.env.GOOGLE_CLOUD_LOCATION = ENV.location
+
+const ai = new GoogleGenAI({})
 
 // ── RAG Pipeline ───────────────────────────────────────────────────
 
@@ -167,7 +167,6 @@ export async function ragQuery(opts: RagOptions): Promise<RagResult> {
     .join('\n\n---\n\n')
 
   // 6) Call Gemini with grounded context
-  const ai = vertexClient()
   const resp = await ai.models.generateContent({
     model: ENV.chatModel,
     contents: [

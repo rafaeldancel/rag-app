@@ -7,7 +7,7 @@ const mockEntry = {
   title: 'Old Title',
   text: 'Old body text',
   createdAt: 0,
-  userId: 'guest',
+  updatedAt: 0,
   aiInsight: null,
 }
 
