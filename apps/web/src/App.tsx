@@ -68,10 +68,11 @@ interface MainLayoutProps {
 
 function MainLayout({ aiOpen, setAiOpen, aiPrefill, setAiPrefill, openAI }: MainLayoutProps) {
   const location = useLocation()
+  const { loading } = useAuth()
 
-  // Hide BottomNav and AI Modal on auth/splash flows
+  // Hide BottomNav and AI Modal on auth/splash flows or while auth state is resolving
   const hideNavPaths = ['/', '/splash', '/welcome', '/landing', '/auth', '/onboarding']
-  const shouldHideNav = hideNavPaths.includes(location.pathname)
+  const shouldHideNav = hideNavPaths.includes(location.pathname) || loading
 
   return (
     <AppShell>
