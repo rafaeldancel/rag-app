@@ -1,4 +1,5 @@
 import * as admin from 'firebase-admin'
+import { TRPCError } from '@trpc/server'
 import { router, publicProcedure } from '../trpc'
 import {
   UpsertAnnotationInputSchema,
