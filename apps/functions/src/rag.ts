@@ -102,6 +102,17 @@ export async function ragQuery(opts: RagOptions): Promise<RagResult> {
   // 2) Retrieve nearest chunks from Firestore
   const nearest = await findNearestChunks(qVec, topK)
 
+  // If the knowledge base is empty in strict mode there's nothing to answer from
+  if (nearest.length === 0 && profile === 'strict') {
+    return {
+      answer:
+        'No relevant sources were found in the knowledge base for this question. Try ingesting related content first.',
+      sources: [],
+      profile,
+      chunksRetrieved: 0,
+    }
+  }
+
   // 3) Fetch parent doc metadata and enrich with catalog
   const chunks: Array<{
     id: string
@@ -194,8 +205,18 @@ export async function ragQuery(opts: RagOptions): Promise<RagResult> {
     apa: d.apa,
   }))
 
+  const answer = resp.text?.trim() ?? ''
+  if (!answer) {
+    return {
+      answer: 'I was unable to generate a response. Please try rephrasing your question.',
+      sources,
+      profile,
+      chunksRetrieved: chunks.length,
+    }
+  }
+
   return {
-    answer: resp.text ?? '',
+    answer,
     sources,
     profile,
     chunksRetrieved: chunks.length,
