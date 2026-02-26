@@ -1,13 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import {
-  BookOpen,
-  ChevronRight,
-  Sparkles,
-  Flame,
-  PenLine,
-  MessageCircle,
-  Compass,
-} from 'lucide-react'
+import { BookOpen, ChevronRight, Sparkles, MessageCircle, Compass } from 'lucide-react'
 import { StreakHeader } from '../components/today/StreakHeader'
 import { DailyVerseCard } from '../components/today/DailyVerseCard'
 import { DailyPrayerCard } from '../components/today/DailyPrayerCard'
@@ -43,10 +35,6 @@ export function TodayPage() {
   const discoveryTopics = userProfile?.discoveryTopics || []
   const faithBackground = userProfile?.faithBackground || 'Exploring'
   const worldview = userProfile?.worldviewAudit || { epistemology: 5, openness: 5, metaphysics: 5 }
-
-  // Temporary mock stats until dedicated collections are set up in useAuth
-  const chaptersRead = 87
-  const diaryEntries = 5
 
   // Time-based greeting
   const hour = new Date().getHours()
@@ -228,7 +216,7 @@ export function TodayPage() {
         isLoading={prayer.isLoading}
       />
 
-      <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-[500ms] fill-mode-both">
+      <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-[500ms] fill-mode-both pb-8">
         <button
           onClick={handleContinueReading}
           className="mx-4 flex w-[calc(100%-2rem)] items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-soft text-left group hover:shadow-md transition-all active:scale-[0.98]"
@@ -244,43 +232,6 @@ export function TodayPage() {
           </div>
           <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
         </button>
-      </div>
-
-      {/* Quick Stats Row */}
-      <div className="px-4 pt-4 pb-8 grid grid-cols-3 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-[600ms] fill-mode-both">
-        <div className="bg-card border border-border rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 shadow-sm">
-          <Flame className="h-5 w-5 text-streak" />
-          <div className="flex flex-col items-center">
-            <span className="text-base font-semibold text-foreground leading-none">
-              {streakCount}
-            </span>
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">
-              Days
-            </span>
-          </div>
-        </div>
-        <div className="bg-card border border-border rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 shadow-sm">
-          <BookOpen className="h-5 w-5 text-amber-500" />
-          <div className="flex flex-col items-center">
-            <span className="text-base font-semibold text-foreground leading-none">
-              {chaptersRead}
-            </span>
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">
-              Chapters
-            </span>
-          </div>
-        </div>
-        <div className="bg-card border border-border rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 shadow-sm">
-          <PenLine className="h-5 w-5 text-emerald-500" />
-          <div className="flex flex-col items-center">
-            <span className="text-base font-semibold text-foreground leading-none">
-              {diaryEntries}
-            </span>
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">
-              Entries
-            </span>
-          </div>
-        </div>
       </div>
     </main>
   )

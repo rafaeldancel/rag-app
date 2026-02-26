@@ -10,8 +10,18 @@ interface DailyPrayerCardProps {
   className?: string
 }
 
+const AMEN_KEY = `prayer.amen.${new Date().toISOString().slice(0, 10)}`
+
 export function DailyPrayerCard({ text, basedOn, isLoading, className }: DailyPrayerCardProps) {
-  const [amen, setAmen] = useState(false)
+  const [amen, setAmen] = useState(() => localStorage.getItem(AMEN_KEY) === 'true')
+
+  function toggleAmen() {
+    setAmen(v => {
+      const next = !v
+      localStorage.setItem(AMEN_KEY, String(next))
+      return next
+    })
+  }
 
   if (isLoading) {
     return (
@@ -34,7 +44,7 @@ export function DailyPrayerCard({ text, basedOn, isLoading, className }: DailyPr
       </p>
       <p className="font-serif text-base leading-relaxed text-foreground italic">{text}</p>
       <button
-        onClick={() => setAmen(v => !v)}
+        onClick={toggleAmen}
         aria-pressed={amen}
         className={cn(
           'mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors',
