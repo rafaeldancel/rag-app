@@ -65,7 +65,7 @@ export const chat = onCall({ cors: true, region: ENV.location }, async req => {
   const profile: PromptProfile = validProfiles.includes(rawProfile as PromptProfile)
     ? (rawProfile as PromptProfile)
     : 'bible-study'
-  const uid = req.auth?.uid || req.data?.uid
+  const uid = req.auth?.uid
 
   if (!question) throw new Error('Missing question')
 
@@ -201,7 +201,17 @@ export const api = onRequest(
       endpoint: '/api/trpc',
       req: fetchReq,
       router: appRouter,
-      createContext: () => ({}),
+      createContext: async () => {
+        const authHeader = req.headers.authorization
+        if (!authHeader?.startsWith('Bearer ')) return { uid: null }
+        const token = authHeader.slice(7)
+        try {
+          const decoded = await admin.auth().verifyIdToken(token)
+          return { uid: decoded.uid }
+        } catch {
+          return { uid: null }
+        }
+      },
     })
 
     res.status(response.status)

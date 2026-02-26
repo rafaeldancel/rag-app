@@ -3,7 +3,7 @@ import { appRouter } from '../router'
 import { createCallerFactory } from '../trpc'
 
 const createCaller = createCallerFactory(appRouter)
-const caller = createCaller({})
+const caller = createCaller({ uid: null })
 
 describe('userRouter', () => {
   describe('create', () => {

@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { TRPCError } from '@trpc/server'
 import { GoogleGenAI } from '@google/genai'
 import { z } from 'zod'
-import { router, publicProcedure } from '../trpc'
+import { router, protectedProcedure } from '../trpc'
 import {
   ListDiaryEntriesInputSchema,
   CreateDiaryEntryInputSchema,
@@ -68,10 +68,13 @@ function toEntry(id: string, data: admin.firestore.DocumentData) {
 
 export const diaryRouter = router({
   /** List all diary entries for a user, newest first. */
-  list: publicProcedure
+  list: protectedProcedure
     .input(ListDiaryEntriesInputSchema)
     .output(DiaryEntrySchema.array())
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      if (input.userId !== ctx.uid) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied.' })
+      }
       const db = admin.firestore()
       const snap = await db
         .collection(`users/${input.userId}/diaryEntries`)
@@ -82,10 +85,13 @@ export const diaryRouter = router({
     }),
 
   /** Create a new diary entry and generate an AI insight. */
-  create: publicProcedure
+  create: protectedProcedure
     .input(CreateDiaryEntryInputSchema)
     .output(DiaryEntrySchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      if (input.userId !== ctx.uid) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied.' })
+      }
       const db = admin.firestore()
       const now = admin.firestore.FieldValue.serverTimestamp()
 
@@ -114,10 +120,13 @@ export const diaryRouter = router({
     }),
 
   /** Update an existing diary entry and regenerate the AI insight. */
-  update: publicProcedure
+  update: protectedProcedure
     .input(UpdateDiaryEntryInputSchema)
     .output(DiaryEntrySchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      if (input.userId !== ctx.uid) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied.' })
+      }
       const db = admin.firestore()
       const ref = db.doc(`users/${input.userId}/diaryEntries/${input.id}`)
       const existing = await ref.get()
@@ -146,10 +155,13 @@ export const diaryRouter = router({
     }),
 
   /** Delete a diary entry. Returns the deleted entry's id. */
-  delete: publicProcedure
+  delete: protectedProcedure
     .input(DeleteDiaryEntryInputSchema)
     .output(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      if (input.userId !== ctx.uid) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied.' })
+      }
       const db = admin.firestore()
       await db.doc(`users/${input.userId}/diaryEntries/${input.id}`).delete()
       return { id: input.id }

@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 import { TRPCError } from '@trpc/server'
-import { router, publicProcedure } from '../trpc'
+import { router, protectedProcedure } from '../trpc'
 import {
   UpsertAnnotationInputSchema,
   GetAnnotationsInputSchema,
@@ -17,10 +17,13 @@ export const annotationsRouter = router({
    * Stored at: users/{userId}/annotations/{usfm}
    * createdAt is set only on first write; reference is stored if provided.
    */
-  upsert: publicProcedure
+  upsert: protectedProcedure
     .input(UpsertAnnotationInputSchema)
     .output(AnnotationSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      if (input.userId !== ctx.uid) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied.' })
+      }
       const db = admin.firestore()
       const docId = input.usfm.replace(/\./g, '_') // "JHN_3_16"
       const ref = db.doc(`users/${input.userId}/annotations/${docId}`)
@@ -63,10 +66,13 @@ export const annotationsRouter = router({
   /**
    * Get all annotations for a given book + chapter.
    */
-  getForChapter: publicProcedure
+  getForChapter: protectedProcedure
     .input(GetAnnotationsInputSchema)
     .output(AnnotationSchema.array())
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      if (input.userId !== ctx.uid) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied.' })
+      }
       const db = admin.firestore()
       const prefix = `${input.book}.${input.chapter}.`
 
@@ -92,10 +98,13 @@ export const annotationsRouter = router({
   /**
    * List all annotations for a user, ordered by newest first.
    */
-  listAll: publicProcedure
+  listAll: protectedProcedure
     .input(ListAnnotationsInputSchema)
     .output(AnnotationSchema.array())
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      if (input.userId !== ctx.uid) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied.' })
+      }
       const db = admin.firestore()
 
       const snap = await db
@@ -119,10 +128,13 @@ export const annotationsRouter = router({
   /**
    * Delete a single annotation by USFM address.
    */
-  delete: publicProcedure
+  delete: protectedProcedure
     .input(DeleteAnnotationInputSchema)
     .output(DeleteAnnotationInputSchema.pick({ usfm: true }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      if (input.userId !== ctx.uid) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied.' })
+      }
       const db = admin.firestore()
       const docId = input.usfm.replace(/\./g, '_')
       await db.doc(`users/${input.userId}/annotations/${docId}`).delete()
