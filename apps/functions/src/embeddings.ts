@@ -1,15 +1,14 @@
 import { GoogleGenAI } from '@google/genai'
 import { ENV } from './env'
 
-function vertexClient() {
-  process.env.GOOGLE_GENAI_USE_VERTEXAI = 'true'
-  process.env.GOOGLE_CLOUD_PROJECT = ENV.projectId
-  process.env.GOOGLE_CLOUD_LOCATION = ENV.location
-  return new GoogleGenAI({})
-}
+// Set Vertex AI env vars once at module load — avoids per-request mutation and reuses connection pool.
+process.env.GOOGLE_GENAI_USE_VERTEXAI = 'true'
+process.env.GOOGLE_CLOUD_PROJECT = ENV.projectId
+process.env.GOOGLE_CLOUD_LOCATION = ENV.location
+
+const ai = new GoogleGenAI({})
 
 export async function embedTexts(texts: string[]): Promise<number[][]> {
-  const ai = vertexClient()
   const resp = await ai.models.embedContent({
     model: ENV.embeddingModel,
     contents: texts.map(t => ({ role: 'user', parts: [{ text: t }] })),

@@ -3,60 +3,64 @@
 @tailwind utilities;
 
 /* =============================================================================
-   Shadcn UI Theme Variables
+   Logos Warm Theme — Unified with Splash / Auth / Onboarding
    =============================================================================
-   🎨 ANALOGY: These CSS variables are like the "color palette" for a painter.
-   Instead of hardcoding colors everywhere, we define them once here,
-   and all Shadcn components automatically use these colors!
-   
-   This makes it easy to change the entire look of your app by just
-   updating these values - like changing the mood lighting in a theater!
+   Warm charcoal dark mode, warm cream light mode.
+   Primary accent: gold/amber.  Secondary accent: warm orange.
    ============================================================================= */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    /* Light mode — warm cream palette */
+    --background: 40 33% 97%; /* warm off-white / cream */
+    --foreground: 30 20% 12%; /* warm dark charcoal text */
+    --card: 40 33% 99%; /* white with warm tint */
+    --card-foreground: 30 20% 12%;
+    --popover: 40 33% 99%;
+    --popover-foreground: 30 20% 12%;
+    --primary: 38 75% 50%; /* warm gold / amber */
+    --primary-foreground: 30 20% 10%; /* dark text on gold buttons */
+    --secondary: 30 20% 93%; /* warm light gray */
+    --secondary-foreground: 30 20% 12%;
+    --muted: 30 15% 93%; /* muted warm gray */
+    --muted-foreground: 30 10% 46%; /* medium warm gray text */
+    --accent: 25 90% 55%; /* warm orange (secondary accent) */
+    --accent-foreground: 0 0% 100%; /* white on orange */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 30 20% 88%; /* warm beige border */
+    --input: 30 20% 88%;
+    --ring: 38 75% 50%; /* gold ring */
     --radius: 0.5rem;
+    --streak: 25 95% 53%; /* warm orange streak */
+    --streak-foreground: 0 0% 100%;
+    --shadow-soft: 0 2px 12px 0 hsl(30 20% 12% / 0.06);
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    /* Dark mode — warm charcoal palette (matching Auth/Splash stone-900) */
+    --background: 24 10% 10%; /* warm charcoal (≈stone-900) */
+    --foreground: 30 15% 92%; /* warm cream text */
+    --card: 24 10% 13%; /* slightly lighter warm dark */
+    --card-foreground: 30 15% 92%;
+    --popover: 24 10% 13%;
+    --popover-foreground: 30 15% 92%;
+    --primary: 38 75% 55%; /* warm gold / amber */
+    --primary-foreground: 24 10% 8%; /* very dark on gold */
+    --secondary: 24 8% 18%; /* warm dark gray surface */
+    --secondary-foreground: 30 15% 92%;
+    --muted: 24 8% 18%;
+    --muted-foreground: 30 10% 58%; /* warm medium gray */
+    --accent: 25 90% 55%; /* warm orange */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 24 8% 20%; /* warm dark border */
+    --input: 24 8% 20%;
+    --ring: 38 75% 55%; /* gold ring */
+    --streak: 25 90% 58%;
+    --streak-foreground: 0 0% 100%;
+    --shadow-soft: 0 2px 12px 0 hsl(0 0% 0% / 0.3);
   }
 }
 
@@ -74,6 +78,76 @@
   }
 }
 
+@keyframes slide-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes draw-line {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+@keyframes bar-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes ken-burns {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.08); }
+}
+
+@keyframes scroll-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(8px); }
+}
+
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(10px);
+  }
+  70% {
+    transform: scale(1.02) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(200, 160, 60, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(200, 160, 60, 0.7);
+  }
+}
+
+@keyframes draw-check {
+  0% {
+    stroke-dasharray: 0, 100;
+    opacity: 0;
+  }
+  100% {
+    stroke-dasharray: 100, 100;
+    opacity: 1;
+  }
+}
+
+.animate-in {
+  animation: slide-up 0.6s ease-out forwards;
+  opacity: 0; /* Ensure it's hidden before animation starts */
+}
+
 /* =============================================================================
    Custom Styles
    ============================================================================= */
@@ -85,9 +159,7 @@ body {
 }
 
 #app {
-  max-width: 1280px;
   margin: 0 auto;
-  padding: 2rem;
 }
 
 .logo {
@@ -107,4 +179,14 @@ a {
 }
 a:hover {
   text-decoration: underline;
+}
+
+@layer utilities {
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
 }

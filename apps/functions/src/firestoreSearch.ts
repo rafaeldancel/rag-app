@@ -1,20 +1,19 @@
 import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 
-// Lazy getter — only calls admin.firestore() when actually used,
-// which is inside a function call, long after initializeApp() has run.
 function getDb() {
   return admin.firestore()
 }
 
 export async function batchStoreChunks(
   docId: string,
-  chunks: Array<{ text: string; vector: number[] }>
+  chunks: Array<{ text: string; vector: number[] }>,
+  startIndex = 0
 ) {
   const db = getDb()
   const batch = db.batch()
   chunks.forEach((chunk, i) => {
-    const chunkId = String(i).padStart(4, '0')
+    const chunkId = String(startIndex + i).padStart(4, '0')
     const ref = db.doc(`docs/${docId}/chunks/${chunkId}`)
     batch.set(ref, {
       text: chunk.text,

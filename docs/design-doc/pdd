@@ -1,0 +1,53 @@
+# Product Design Document (PDD): "Logos"
+
+**Tech Stack:** React, TypeScript, Monorepo (Turborepo), Firebase (Firestore, Auth), Vertex AI (Gemini 3 Flash).
+
+---
+
+## Executive Summary
+
+**Logos** is a dynamic, evidence-based mentorship platform that bridges the gap between secular logic and spiritual formation. By integrating the **YouVersion API** for scripture and **Vertex AI** for a personalized assistant named **Peter**, Logos provides a non-coercive, intellectually rigorous path for exploring the Christian worldview.
+
+---
+
+## Epic 1: Dynamic Worldview Evolution & Onboarding
+
+**Goal:** Establish a logical baseline to calibrate Peter’s initial interaction style without enforcing a static personality.
+
+- **User Story 1.1 (The Worldview Audit):** As a user, I want to identify my starting baseline via a **3-axis sliding scale survey** so Peter avoids "preachy" jargon and prioritizes pure logic where necessary.
+  - **Axes:** Epistemology (Evidence vs. Intuition), Openness (Skeptic vs. Seeker), Metaphysics (Materialist vs. Supernaturalist).
+- **User Story 1.2 (Topic Discovery):** As a user, I want Peter to suggest 3–5 initial "Discovery Topics" (e.g., _“The Historicity of the New Testament”_) based on my audit results to jumpstart my inquiry.
+- **User Story 1.3 (Companion Initialization):** As a user, I want to initialize **Peter**, my fixed AI Mentor.
+
+---
+
+## Epic 2: The "Mentor" RAG Assistant (Peter)
+
+**Goal:** Provide high-fidelity, low-latency guidance grounded in an "Evidence Hierarchy" with strict factual guardrails.
+
+- **User Story 2.1 (Contextual RAG):** As a user, I want Peter to retrieve and analyze data based specifically on the current topic I am exploring to prevent information overload.
+- **User Story 2.2 (Anti-Hallucination Guardrail):** As a user, I want Scripture and historical claims to be accurate and verifiable.
+  - **Logic:** Peter must pull literal quotes from the bible. If Peter is summarizing or unsure, he must state: _"I am paraphrasing this principle."_
+- **User Story 2.3 (Citation Transparency):** As a researcher, I want Peter to provide clickable citations for every historical claim, linking directly to the source document or the Bible reader.
+- **User Story 2.4 (Personal Context Memory):** As a user, I want Peter to reference my **Firestore-stored diary entries and** to receive an insight from Peter (AI) every time I save an entry.
+
+---
+
+## Epic 3: Professional Bible Reader & Interaction Suite
+
+**Goal:** Create a high-performance reading environment where user insights directly feed the AI's understanding.
+
+- **User Story 3.1 (Multi-Translation Access):** As a user, I want to switch between Bible versions (NASB, ESV, NIV) via the **YouVersion API** to compare literal and thought-for-thought translations.
+- **User Story 3.2 (The Peter Action Modal):** As a reader, I want to select a verse and access a modal with three options: **Highlight**, **Note**, or **Ask Peter about this logic/verse**.
+- **User Story 3.3 (Annotated Bible State):** As a user, I want my notes and highlights indexed into a vector store so Peter "remembers" my reflections and provides deeper insights during chat.
+
+---
+
+## Epic 4: Lifestyle & Progress Tracking
+
+**Goal:** Transition from theory to consistent practice through a discovery-based dashboard with full user agency.
+
+- **User Story 4.1 (Today Section Settings):** As a user, I want a settings menu to toggle visibility for the **Verse of the Day**, **Daily Prayer**, and **AI Insights** so the "Today" experience never feels enforced.
+- **Data Tracked:** Topics Explored, Questions Asked, Sentiment Trends, and Engagement Streaks.
+- **User Story 4.2 (Dual-Depth Diary Insights):** As a user, I want Peter to offer two levels of reflection:
+  1. **Immediate Insight:** Upon saving a single entry, Peter provides a specific reflection on that thought.

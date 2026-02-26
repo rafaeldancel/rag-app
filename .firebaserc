@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "logos-91c8e"
-  }
+    "default": "logos-91c8e",
+    "frontend": "logos-91c8e"
+  },
+  "targets": {},
+  "etags": {}
 }

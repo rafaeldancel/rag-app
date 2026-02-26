@@ -8,24 +8,85 @@ vi.mock('./firebase', () => ({
   ingestCallable: vi.fn(),
 }))
 
+// Mock tRPC so TodayPage/BiblePage/DiaryPage don't need a real provider
+vi.mock('./lib/trpc', () => ({
+  trpc: {
+    bible: {
+      getVOTD: {
+        useQuery: vi.fn(() => ({ data: undefined, isLoading: true, isError: false })),
+      },
+      getDailyPrayer: {
+        useQuery: vi.fn(() => ({ data: undefined, isLoading: true, isError: false })),
+      },
+      getBooks: {
+        useQuery: vi.fn(() => ({ data: [], isLoading: false, isError: false })),
+      },
+      getChapter: {
+        useQuery: vi.fn(() => ({ data: undefined, isLoading: true, isError: false })),
+      },
+    },
+    diary: {
+      list: {
+        useQuery: vi.fn(() => ({ data: [], isLoading: false, isError: false })),
+      },
+      create: {
+        useMutation: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
+      },
+      update: {
+        useMutation: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
+      },
+      delete: {
+        useMutation: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
+      },
+    },
+    annotations: {
+      getForChapter: {
+        useQuery: vi.fn(() => ({ data: [], isLoading: false })),
+      },
+      listAll: {
+        useQuery: vi.fn(() => ({ data: [], isLoading: false })),
+      },
+      upsert: {
+        useMutation: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
+      },
+      delete: {
+        useMutation: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
+      },
+    },
+    useUtils: vi.fn(() => ({
+      diary: { list: { invalidate: vi.fn() } },
+      annotations: {
+        getForChapter: { invalidate: vi.fn() },
+        listAll: { invalidate: vi.fn() },
+      },
+    })),
+  },
+  trpcClient: {},
+}))
+
 describe('App', () => {
-  it('renders the RAG App heading', () => {
+  it('renders the bottom navigation', () => {
     render(<App />)
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('RAG App')
+    expect(screen.getByRole('navigation', { name: /bottom navigation/i })).toBeInTheDocument()
   })
 
-  it('renders the RAG Chat heading', () => {
+  it('renders the Today nav link', () => {
     render(<App />)
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('RAG Chat')
+    expect(screen.getByRole('link', { name: /today/i })).toBeInTheDocument()
   })
 
-  it('renders the chat input', () => {
+  it('renders the Bible nav link', () => {
     render(<App />)
-    expect(screen.getByPlaceholderText('Ask a question…')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /bible/i })).toBeInTheDocument()
   })
 
-  it('renders the send button', () => {
+  it('renders the AI trigger button', () => {
     render(<App />)
-    expect(screen.getByRole('button', { name: /send/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /open ai assistant/i })).toBeInTheDocument()
+  })
+
+  it('renders the Today page by default', () => {
+    render(<App />)
+    expect(screen.getByText(/day streak/i)).toBeInTheDocument()
   })
 })

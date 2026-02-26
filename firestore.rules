@@ -1,0 +1,44 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── User-scoped data ──────────────────────────────────────────────────────
+    // The user's own profile document lives at /users/{uid}.
+    // Diary entries, annotations, and other subcollection docs live beneath it.
+    // Both paths require the caller's UID to match the userId segment.
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ── RAG knowledge base ────────────────────────────────────────────────────
+    // Docs and chunks are ingested by authenticated users via Cloud Functions
+    // (server-side writes use the Admin SDK which bypasses these rules).
+    // Clients may read for future direct-query use, but never write directly.
+    match /docs/{docId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    match /docs/{docId}/chunks/{chunkId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // ── Rate limit counters ───────────────────────────────────────────────────
+    // Written and read exclusively by the Admin SDK in Cloud Functions.
+    // Clients must never be able to reset or manipulate their own counters.
+    match /rateLimits/{key} {
+      allow read, write: if false;
+    }
+
+    // ── Deny-all fallback ─────────────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

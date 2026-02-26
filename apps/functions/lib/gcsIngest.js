@@ -1,72 +1,103 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
+import * as admin from 'firebase-admin';
+import { onObjectFinalized } from 'firebase-functions/v2/storage';
+import { Storage } from '@google-cloud/storage';
+import { chunkText } from './chunking';
+import { embedTexts } from './embeddings';
+import { batchStoreChunks } from './firestoreSearch';
+const storage = new Storage();
+function parseFilename(filePath) {
+    const filename = (filePath.split('/').pop() ?? filePath)
+        .replace('.pdf', '')
+        .replace('.txt', '')
+        .replace('.md', '')
+        .replace('.json', '');
+    const parts = filename.split('_');
+    if (parts.length >= 4) {
+        return {
+            tier: parts[0],
+            category: parts[1],
+            author: parts[2],
+            title: parts.slice(3).join(' '),
+        };
     }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ingestFromGcs = void 0;
-const admin = __importStar(require("firebase-admin"));
-const storage_1 = require("firebase-functions/v2/storage");
-const storage_2 = require("@google-cloud/storage");
-const chunking_1 = require("./chunking");
-const embeddings_1 = require("./embeddings");
-const vectorSearch_1 = require("./vectorSearch");
-const db = admin.firestore();
-const storage = new storage_2.Storage();
-exports.ingestFromGcs = (0, storage_1.onObjectFinalized)({ region: 'us-central1' }, async (event) => {
+    // Fallback for files that don't follow the convention
+    return {
+        tier: 'unclassified',
+        category: 'general',
+        author: 'unknown',
+        title: filename,
+    };
+}
+// ── PDF text extraction ────────────────────────────────────────────
+async function extractTextFromPdf(buffer) {
+    const pdfParse = require('pdf-parse/lib/pdf-parse');
+    const data = await pdfParse(buffer);
+    return data.text;
+}
+// ── Batch helper for large documents ───────────────────────────────
+async function batchEmbed(texts, batchSize = 20) {
+    const allVectors = [];
+    for (let i = 0; i < texts.length; i += batchSize) {
+        const batch = texts.slice(i, i + batchSize);
+        const vectors = await embedTexts(batch);
+        allVectors.push(...vectors);
+        console.log(`Embedded batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(texts.length / batchSize)}`);
+    }
+    return allVectors;
+}
+// ── Cloud Storage trigger ──────────────────────────────────────────
+export const ingestFromGcs = onObjectFinalized({
+    region: 'us-central1',
+    bucket: 'logos-91c8e-rag-docs',
+    timeoutSeconds: 540,
+    memory: '1GiB',
+}, async (event) => {
+    const db = admin.firestore();
     const filePath = event.data.name;
     const bucketName = event.data.bucket;
-    if (!filePath.match(/\.(txt|md|json)$/)) {
+    if (!filePath.match(/\.(txt|md|json|pdf)$/)) {
         console.log(`Skipping unsupported file type: ${filePath}`);
         return;
     }
+    console.log(`Starting ingestion: ${filePath}`);
     const file = storage.bucket(bucketName).file(filePath);
     const [contents] = await file.download();
-    const raw = contents.toString('utf-8');
+    // Extract text based on file type
+    let raw;
+    if (filePath.endsWith('.pdf')) {
+        raw = await extractTextFromPdf(contents);
+    }
+    else {
+        raw = contents.toString('utf-8');
+    }
+    if (!raw.trim()) {
+        console.error(`No text extracted from ${filePath}`);
+        return;
+    }
+    // Parse metadata from filename
+    const meta = parseFilename(filePath);
     const docRef = await db.collection('docs').add({
         sourceType: 'gcs',
         sourceUri: `gs://${bucketName}/${filePath}`,
-        title: filePath.split('/').pop() ?? filePath,
+        title: meta.title,
+        author: meta.author,
+        tier: meta.tier,
+        category: meta.category,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-    const chunks = (0, chunking_1.chunkText)(raw);
-    const vectors = await (0, embeddings_1.embedTexts)(chunks);
-    const batch = db.batch();
-    const datapoints = chunks.map((text, i) => {
-        const chunkId = String(i).padStart(4, '0');
-        const datapointId = `${docRef.id}_${chunkId}`;
-        batch.set(docRef.collection('chunks').doc(chunkId), {
+    const chunks = chunkText(raw);
+    console.log(`Chunked ${filePath} into ${chunks.length} chunks`);
+    // Embed in batches to avoid API rate limits
+    const vectors = await batchEmbed(chunks);
+    // Store in batches of 400 (Firestore limit is 500 per batch)
+    for (let i = 0; i < chunks.length; i += 400) {
+        const batchChunks = chunks.slice(i, i + 400).map((text, j) => ({
             text,
-            vectorDatapointId: datapointId,
-            tokenCountApprox: Math.ceil(text.length / 4),
-        });
-        return {
-            datapointId,
-            featureVector: vectors[i],
-            restricts: [{ namespace: 'docId', allowList: [docRef.id] }],
-        };
-    });
-    await batch.commit();
-    await (0, vectorSearch_1.upsertDatapoints)(datapoints);
-    console.log(`Ingested ${chunks.length} chunks from ${filePath}`);
+            vector: vectors[i + j],
+        }));
+        await batchStoreChunks(docRef.id, batchChunks, i);
+        console.log(`Stored batch ${Math.floor(i / 400) + 1}/${Math.ceil(chunks.length / 400)}`);
+    }
+    console.log(`Ingested ${chunks.length} chunks from ${filePath} [${meta.category}/${meta.tier}]`);
 });
