@@ -70,7 +70,7 @@ function MainLayout({ aiOpen, setAiOpen, aiPrefill, setAiPrefill, openAI }: Main
   const location = useLocation()
 
   // Hide BottomNav and AI Modal on auth/splash flows
-  const hideNavPaths = ['/splash', '/welcome', '/landing', '/auth', '/onboarding']
+  const hideNavPaths = ['/', '/splash', '/welcome', '/landing', '/auth', '/onboarding']
   const shouldHideNav = hideNavPaths.includes(location.pathname)
 
   return (
