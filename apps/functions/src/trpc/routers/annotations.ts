@@ -127,6 +127,8 @@ export const annotationsRouter = router({
 
   /**
    * Delete a single annotation by USFM address.
+   * If `field` is provided, only that field is cleared; the document is deleted
+   * automatically when both note and highlight become empty.
    */
   delete: protectedProcedure
     .input(DeleteAnnotationInputSchema)
@@ -137,7 +139,22 @@ export const annotationsRouter = router({
       }
       const db = admin.firestore()
       const docId = input.usfm.replace(/\./g, '_')
-      await db.doc(`users/${input.userId}/annotations/${docId}`).delete()
+      const ref = db.doc(`users/${input.userId}/annotations/${docId}`)
+
+      if (input.field) {
+        // Clear only the requested field
+        const snap = await ref.get()
+        if (!snap.exists) return { usfm: input.usfm }
+        await ref.update({ [input.field]: admin.firestore.FieldValue.delete() })
+        // Remove the document entirely if nothing meaningful remains
+        const updated = (await ref.get()).data()
+        if (!updated?.highlight && !updated?.note) {
+          await ref.delete()
+        }
+      } else {
+        await ref.delete()
+      }
+
       return { usfm: input.usfm }
     }),
 })

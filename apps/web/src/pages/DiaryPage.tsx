@@ -185,7 +185,9 @@ export function DiaryPage() {
                     note: newNote,
                   })
                 }
-                onDelete={() => deleteAnnotation.mutateAsync({ userId, usfm: a.usfm })}
+                onDelete={() =>
+                  deleteAnnotation.mutateAsync({ userId, usfm: a.usfm, field: 'note' })
+                }
               />
             ))}
           </>
@@ -222,7 +224,9 @@ export function DiaryPage() {
                 highlight={a.highlight!}
                 verseText={a.verseText}
                 createdAt={a.createdAt}
-                onDelete={() => deleteAnnotation.mutateAsync({ userId, usfm: a.usfm })}
+                onDelete={() =>
+                  deleteAnnotation.mutateAsync({ userId, usfm: a.usfm, field: 'highlight' })
+                }
               />
             ))}
           </>

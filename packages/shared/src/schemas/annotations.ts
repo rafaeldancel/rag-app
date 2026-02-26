@@ -49,6 +49,11 @@ export const DeleteAnnotationInputSchema = z.object({
     .refine(s => !s.includes('/'), 'Invalid user ID'),
   /** Full USFM address — e.g. "JHN.3.16" */
   usfm: z.string().regex(/^[A-Z0-9]{2,4}\.\d{1,3}(\.\d{1,3})?$/, 'Invalid USFM format'),
+  /**
+   * If provided, clears only that field instead of deleting the whole document.
+   * The document is automatically deleted when both note and highlight become empty.
+   */
+  field: z.enum(['note', 'highlight']).optional(),
 })
 
 // ─── Response schemas ─────────────────────────────────────────────────────────
