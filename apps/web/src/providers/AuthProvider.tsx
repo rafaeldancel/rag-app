@@ -92,6 +92,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
+      // Reset loading so route guards spin instead of redirecting prematurely
+      // while the Firestore profile fetch is in-flight.
+      setLoading(true)
       setUser(firebaseUser)
 
       if (firebaseUser) {

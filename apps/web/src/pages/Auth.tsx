@@ -45,7 +45,7 @@ export function AuthPage() {
         setShowVerificationSent(true)
       } else {
         const userCredential = await signInWithEmailAndPassword(auth, email, password)
-        if (!userCredential.user.emailVerified) {
+        if (!import.meta.env.DEV && !userCredential.user.emailVerified) {
           await signOut(auth)
           setError('Please verify your email before signing in. Check your inbox.')
         }

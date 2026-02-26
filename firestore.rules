@@ -4,8 +4,13 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ── User-scoped data ──────────────────────────────────────────────────────
-    // Diary entries and annotations are private to their owner.
-    // The userId segment in the path must match the caller's Firebase UID.
+    // The user's own profile document lives at /users/{uid}.
+    // Diary entries, annotations, and other subcollection docs live beneath it.
+    // Both paths require the caller's UID to match the userId segment.
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
     match /users/{userId}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }

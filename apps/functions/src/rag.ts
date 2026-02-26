@@ -232,11 +232,7 @@ export async function ragQuery(opts: RagOptions): Promise<RagResult> {
         role: 'user',
         parts: [
           {
-<<<<<<< HEAD
-            text: `<system>\n${SYSTEM_PROMPTS[profile]}\n</system>\n\n<context>\n${contextBlock}\n</context>\n\n<question>\n${question}\n</question>`,
-=======
-            text: `SYSTEM:\n${SYSTEM_PROMPTS[profile]}${calibrationText}\n\nCONTEXT:\n${contextBlock}\n\nQUESTION:\n${question}`,
->>>>>>> e7952e6 (feat: add splash screen, onboarding flow, auth pages, and landing page with refined UI theme — ready for UI review and further refinement)
+            text: `<system>\n${SYSTEM_PROMPTS[profile]}${calibrationText}\n</system>\n\n<context>\n${contextBlock}\n</context>\n\n<question>\n${question}\n</question>`,
           },
         ],
       },
