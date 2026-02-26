@@ -39,9 +39,10 @@ async function generateInsight(text: string): Promise<AIInsight | null> {
     })
 
     const raw = (response.text ?? '').trim()
-    // Strip any markdown code fences Gemini might add
-    const json = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
-    const parsed = JSON.parse(json)
+    // Extract the first JSON object — handles extra text or markdown fences
+    const match = raw.match(/\{[\s\S]*\}/)
+    if (!match) throw new Error('No JSON object in Gemini response')
+    const parsed = JSON.parse(match[0])
     return AIInsightSchema.parse(parsed)
   } catch (err) {
     console.error('[generateInsight] failed:', err)
