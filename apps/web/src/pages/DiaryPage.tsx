@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useAuth } from '../providers/AuthProvider'
 import { Plus } from 'lucide-react'
 import { SegmentedControl } from '../components/diary/SegmentedControl'
 import { DiaryEntryCard } from '../components/diary/DiaryEntryCard'
@@ -47,6 +48,8 @@ function AnnotationSkeleton() {
 }
 
 export function DiaryPage() {
+  const { user } = useAuth()
+  const userId = user?.uid ?? ''
   const [searchParams, setSearchParams] = useSearchParams()
   const tab = searchParams.get('tab') ?? 'diary'
   function setTab(value: string) {
@@ -78,15 +81,15 @@ export function DiaryPage() {
 
   async function handleSave(title: string, text: string) {
     if (editing) {
-      await updateMutation.mutateAsync({ userId: 'guest', id: editing.id, title, text })
+      await updateMutation.mutateAsync({ userId, id: editing.id, title, text })
     } else {
-      await createMutation.mutateAsync({ userId: 'guest', title, text })
+      await createMutation.mutateAsync({ userId, title, text })
     }
     handleClose()
   }
 
   async function handleDelete(id: string) {
-    await deleteMutation.mutateAsync({ userId: 'guest', id })
+    await deleteMutation.mutateAsync({ userId, id })
   }
 
   function formatDate(ms: number) {
@@ -177,12 +180,12 @@ export function DiaryPage() {
                 isSaving={upsertAnnotation.isPending}
                 onSave={newNote =>
                   upsertAnnotation.mutateAsync({
-                    userId: 'guest',
+                    userId,
                     usfm: a.usfm,
                     note: newNote,
                   })
                 }
-                onDelete={() => deleteAnnotation.mutateAsync({ userId: 'guest', usfm: a.usfm })}
+                onDelete={() => deleteAnnotation.mutateAsync({ userId, usfm: a.usfm })}
               />
             ))}
           </>
@@ -219,7 +222,7 @@ export function DiaryPage() {
                 highlight={a.highlight!}
                 verseText={a.verseText}
                 createdAt={a.createdAt}
-                onDelete={() => deleteAnnotation.mutateAsync({ userId: 'guest', usfm: a.usfm })}
+                onDelete={() => deleteAnnotation.mutateAsync({ userId, usfm: a.usfm })}
               />
             ))}
           </>

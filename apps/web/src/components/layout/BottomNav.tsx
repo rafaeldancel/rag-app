@@ -4,7 +4,7 @@ import { AITriggerButton } from './AITriggerButton'
 import { cn } from '@repo/ui/utils'
 
 const NAV_ITEMS = [
-  { to: '/', icon: BookOpen, label: 'Today' },
+  { to: '/today', icon: BookOpen, label: 'Today' },
   { to: '/bible', icon: BookMarked, label: 'Bible' },
   { to: '/diary', icon: PenLine, label: 'Diary' },
   { to: '/profile', icon: User, label: 'Profile' },
@@ -42,7 +42,7 @@ export function BottomNav({ onAIPress, aiOpen = false }: BottomNavProps) {
         {/* Left: Today + Bible */}
         <div className="flex flex-1 justify-around">
           {NAV_ITEMS.slice(0, 2).map(({ to, icon: Icon, label }) => (
-            <NavLink key={to} to={to} end={to === '/'}>
+            <NavLink key={to} to={to}>
               {({ isActive }) => (
                 <div
                   className={cn(

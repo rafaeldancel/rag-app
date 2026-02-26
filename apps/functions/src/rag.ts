@@ -53,6 +53,7 @@ export interface RagOptions {
   question: string
   profile?: PromptProfile
   topK?: number
+  uid?: string
 }
 
 export interface SourceRef {
@@ -93,10 +94,56 @@ const ai = new GoogleGenAI({})
 // ── RAG Pipeline ───────────────────────────────────────────────────
 
 export async function ragQuery(opts: RagOptions): Promise<RagResult> {
-  const { question, profile = 'bible-study', topK = 6 } = opts
+  const { question, profile = 'bible-study', topK = 6, uid } = opts
   const db = admin.firestore()
 
-  // 1) Embed the user's question
+  // 1) Fetch user worldview if provided
+  let calibrationText = ''
+  if (uid) {
+    try {
+      const userDoc = await db.doc(`users/${uid}`).get()
+      if (userDoc.exists) {
+        const data = userDoc.data()
+        const fb = data?.faithBackground
+        const wv = data?.worldviewAudit
+
+        if (fb || wv) {
+          calibrationText = `\n\nThe user's worldview profile:\n`
+          if (fb) calibrationText += `- Faith Background: ${fb}\n`
+          if (wv) {
+            calibrationText += `- Epistemology (1=evidence-based, 10=intuition-based): ${wv.epistemology ?? 5}\n`
+            calibrationText += `- Openness (1=skeptic, 10=seeker): ${wv.openness ?? 5}\n`
+            calibrationText += `- Metaphysics (1=materialist, 10=supernaturalist): ${wv.metaphysics ?? 5}\n\n`
+            calibrationText += `Calibrate your response style:\n`
+
+            const openness = wv.openness ?? 5
+            if (openness <= 3)
+              calibrationText += `- For low openness (1-3): Lead with pure logic, historical evidence, and secular academic sources. Avoid spiritual language.\n`
+            else if (openness <= 6)
+              calibrationText += `- For mid openness (4-6): Blend evidence-based reasoning with occasional spiritual references. Always ground claims in evidence first.\n`
+            else
+              calibrationText += `- For high openness (7-10): You may integrate scriptural references and spiritual application alongside evidence.\n`
+
+            const epistemology = wv.epistemology ?? 5
+            if (epistemology <= 3)
+              calibrationText += `- For low epistemology (1-3): Prioritize data, studies, and verifiable claims.\n`
+            else if (epistemology >= 7)
+              calibrationText += `- For high epistemology (7-10): You may reference personal testimony and experiential knowledge.\n`
+
+            const metaphysics = wv.metaphysics ?? 5
+            if (metaphysics <= 3)
+              calibrationText += `- For low metaphysics (1-3): Frame everything in naturalistic terms first.\n`
+            else if (metaphysics >= 7)
+              calibrationText += `- For high metaphysics (7-10): You may reference supernatural concepts directly.\n`
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch user worldview:', err)
+    }
+  }
+
+  // 2) Embed the user's question
   const [qVec] = await embedTexts([question])
 
   // 2) Retrieve nearest chunks from Firestore
@@ -185,7 +232,11 @@ export async function ragQuery(opts: RagOptions): Promise<RagResult> {
         role: 'user',
         parts: [
           {
+<<<<<<< HEAD
             text: `<system>\n${SYSTEM_PROMPTS[profile]}\n</system>\n\n<context>\n${contextBlock}\n</context>\n\n<question>\n${question}\n</question>`,
+=======
+            text: `SYSTEM:\n${SYSTEM_PROMPTS[profile]}${calibrationText}\n\nCONTEXT:\n${contextBlock}\n\nQUESTION:\n${question}`,
+>>>>>>> e7952e6 (feat: add splash screen, onboarding flow, auth pages, and landing page with refined UI theme — ready for UI review and further refinement)
           },
         ],
       },

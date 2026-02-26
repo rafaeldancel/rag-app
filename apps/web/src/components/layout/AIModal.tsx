@@ -3,6 +3,7 @@ import { X, Send, Sparkles, SquarePen, Clock, ChevronLeft, Trash2 } from 'lucide
 import ReactMarkdown from 'react-markdown'
 import { cn } from '@repo/ui/utils'
 import { chatCallable, authReady } from '../../firebase'
+import { useAuth } from '../../providers/AuthProvider'
 import { Tooltip } from '../atoms/Tooltip'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -181,6 +182,7 @@ interface AIModalProps {
 }
 
 export function AIModal({ open, onClose, initialInput }: AIModalProps) {
+  const { user } = useAuth()
   const [messages, setMessages] = useState<Message[]>(() => {
     try {
       const saved = sessionStorage.getItem('ai.messages')
@@ -295,7 +297,7 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
 
     try {
       await authReady
-      const resp = await chatCallable({ question: text, profile: 'bible-study' })
+      const resp = await chatCallable({ question: text, profile: 'bible-study', uid: user?.uid })
       const data = resp.data as { answer?: string; sources?: SourceRef[] }
       setMessages(prev => [
         ...prev,

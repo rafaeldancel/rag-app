@@ -60,6 +60,7 @@ function validateIngestUrl(raw: string): URL {
 
 export const chat = onCall({ cors: true, region: ENV.location }, async req => {
   const question = String(req.data?.question || '').trim()
+<<<<<<< HEAD
   const validProfiles: PromptProfile[] = ['bible-study', 'general', 'strict']
   const rawProfile = String(req.data?.profile || '')
   const profile: PromptProfile = validProfiles.includes(rawProfile as PromptProfile)
@@ -73,6 +74,14 @@ export const chat = onCall({ cors: true, region: ENV.location }, async req => {
   await checkRateLimit(rateLimitKey, 50, 86_400_000)
 
   const result = await ragQuery({ question, profile })
+=======
+  const profile = (req.data?.profile as PromptProfile) || 'bible-study'
+  const uid = req.auth?.uid || req.data?.uid
+
+  if (!question) throw new Error('Missing question')
+
+  const result = await ragQuery({ question, profile, uid })
+>>>>>>> e7952e6 (feat: add splash screen, onboarding flow, auth pages, and landing page with refined UI theme — ready for UI review and further refinement)
 
   return {
     answer: result.answer,

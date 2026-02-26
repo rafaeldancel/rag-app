@@ -13,6 +13,7 @@ import { useUpsertAnnotation } from '../hooks/useAnnotations'
 import { useAIModal } from '../lib/AIModalContext'
 import { useReadingProgress } from '../hooks/useReadingProgress'
 import { useBibleSettings } from '../hooks/useBibleSettings'
+import { useAuth } from '../providers/AuthProvider'
 import type { HighlightColor, BibleBook } from '@repo/shared'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -34,6 +35,8 @@ export function BiblePage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const { openAI } = useAIModal()
+  const { user } = useAuth()
+  const userId = user?.uid ?? ''
 
   const versionKey = searchParams.get('v') ?? 'NIV'
   const versionId = VERSIONS[versionKey] ?? BIBLE_VERSIONS.NIV
@@ -255,7 +258,7 @@ export function BiblePage() {
     await Promise.all(
       selectedVerseArray.map(v =>
         upsertAnnotation.mutateAsync({
-          userId: 'guest',
+          userId,
           usfm: v.usfm,
           highlight,
           reference: `${v.chapterRef}:${v.number}`,
@@ -270,7 +273,7 @@ export function BiblePage() {
     await Promise.all(
       selectedVerseArray.map(v =>
         upsertAnnotation.mutateAsync({
-          userId: 'guest',
+          userId,
           usfm: v.usfm,
           note,
           reference: `${v.chapterRef}:${v.number}`,
