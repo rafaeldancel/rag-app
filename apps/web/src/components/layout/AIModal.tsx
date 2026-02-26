@@ -216,9 +216,19 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
     sessionStorage.setItem('ai.messages', JSON.stringify(messages))
   }, [messages])
 
-  // Persist history to localStorage
+  // Persist history to localStorage, guarding against quota exceeded
   useEffect(() => {
-    localStorage.setItem('ai.history', JSON.stringify(conversations))
+    try {
+      localStorage.setItem('ai.history', JSON.stringify(conversations))
+    } catch {
+      // Storage full — trim to oldest half and retry once
+      const trimmed = conversations.slice(0, Math.max(1, Math.floor(conversations.length / 2)))
+      try {
+        localStorage.setItem('ai.history', JSON.stringify(trimmed))
+      } catch {
+        // Give up silently — in-memory state is still intact
+      }
+    }
   }, [conversations])
 
   // Seed input and focus when opening
@@ -252,7 +262,8 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
       id: crypto.randomUUID(),
       createdAt: Date.now(),
       title,
-      messages: currentMessages,
+      // Keep only the last 30 messages to limit localStorage growth
+      messages: currentMessages.slice(-30),
     }
     setConversations(prev => [entry, ...prev].slice(0, MAX_HISTORY))
   }
