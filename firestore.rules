@@ -1,0 +1,39 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── User-scoped data ──────────────────────────────────────────────────────
+    // Diary entries and annotations are private to their owner.
+    // The userId segment in the path must match the caller's Firebase UID.
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ── RAG knowledge base ────────────────────────────────────────────────────
+    // Docs and chunks are ingested by authenticated users via Cloud Functions
+    // (server-side writes use the Admin SDK which bypasses these rules).
+    // Clients may read for future direct-query use, but never write directly.
+    match /docs/{docId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    match /docs/{docId}/chunks/{chunkId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // ── Rate limit counters ───────────────────────────────────────────────────
+    // Written and read exclusively by the Admin SDK in Cloud Functions.
+    // Clients must never be able to reset or manipulate their own counters.
+    match /rateLimits/{key} {
+      allow read, write: if false;
+    }
+
+    // ── Deny-all fallback ─────────────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
