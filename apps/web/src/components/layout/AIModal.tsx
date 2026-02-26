@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { X, Send, Sparkles, SquarePen, Clock, ChevronLeft, Trash2 } from 'lucide-react'
+import { X, Send, SquarePen, Clock, ChevronLeft, Trash2, User } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { cn } from '@repo/ui/utils'
 import { chatCallable, authReady } from '../../firebase'
@@ -340,7 +340,7 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
       {/* Floating chat panel */}
       <div
         role="dialog"
-        aria-label="Logos AI assistant"
+        aria-label="Peter AI assistant"
         className="absolute inset-x-3 bottom-[112px] z-30 flex flex-col rounded-2xl border bg-background shadow-2xl"
         style={{ maxHeight: 'calc(68vh - 100px)' }}
       >
@@ -403,8 +403,8 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold text-foreground">Logos AI</span>
+                <img src="/images/peter-avatar.svg" alt="Peter" className="h-7 w-7 rounded-full" />
+                <span className="text-sm font-semibold text-foreground">Peter</span>
               </div>
               <div className="flex items-center gap-1">
                 {/* History button */}
@@ -450,15 +450,18 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
               {/* Empty state + suggested prompts */}
               {chatState === 'idle' && messages.length === 0 && (
                 <div className="flex flex-col items-center gap-4 py-6">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                    <Sparkles className="h-6 w-6 text-primary" />
-                  </div>
+                  <img
+                    src="/images/peter-avatar.svg"
+                    alt="Peter"
+                    className="h-14 w-14 rounded-full"
+                  />
                   <div className="text-center">
                     <p className="text-sm font-semibold text-foreground">
                       How can I help you today?
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Ask anything about scripture, faith, or prayer.
+                      Ask anything about scripture, philosophy, logic, history, and different world
+                      views.
                     </p>
                   </div>
                   <div className="flex w-full flex-col gap-2">
@@ -491,17 +494,29 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
                   className={cn('flex', msg.role === 'user' ? 'justify-end' : 'justify-start')}
                 >
                   {msg.role === 'user' ? (
-                    <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-sm leading-relaxed text-primary-foreground">
-                      {msg.text}
+                    <div className="flex items-end gap-2">
+                      <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-sm leading-relaxed text-primary-foreground">
+                        {msg.text}
+                      </div>
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                      </div>
                     </div>
                   ) : (
-                    <div className="max-w-[88%] flex flex-col">
-                      <div className="rounded-2xl rounded-bl-sm bg-muted px-4 py-3 text-foreground">
-                        <MessageText text={msg.text} />
+                    <div className="flex items-start gap-2">
+                      <img
+                        src="/images/peter-avatar.svg"
+                        alt="Peter"
+                        className="h-7 w-7 rounded-full shrink-0 mt-0.5"
+                      />
+                      <div className="flex flex-col">
+                        <div className="rounded-2xl rounded-bl-sm bg-muted px-4 py-3 text-foreground">
+                          <MessageText text={msg.text} />
+                        </div>
+                        {msg.sources && msg.sources.length > 0 && (
+                          <SourcesFooter sources={msg.sources} />
+                        )}
                       </div>
-                      {msg.sources && msg.sources.length > 0 && (
-                        <SourcesFooter sources={msg.sources} />
-                      )}
                     </div>
                   )}
                 </div>
@@ -510,14 +525,21 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
               {/* Typing indicator */}
               {chatState === 'loading' && (
                 <div className="flex justify-start">
-                  <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm bg-muted px-4 py-3">
-                    {[0, 1, 2].map(i => (
-                      <span
-                        key={i}
-                        className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce"
-                        style={{ animationDelay: `${i * 150}ms` }}
-                      />
-                    ))}
+                  <div className="flex items-start gap-2">
+                    <img
+                      src="/images/peter-avatar.svg"
+                      alt="Peter"
+                      className="h-7 w-7 rounded-full shrink-0 mt-0.5"
+                    />
+                    <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm bg-muted px-4 py-3">
+                      {[0, 1, 2].map(i => (
+                        <span
+                          key={i}
+                          className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce"
+                          style={{ animationDelay: `${i * 150}ms` }}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
