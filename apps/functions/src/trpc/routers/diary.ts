@@ -23,7 +23,9 @@ async function generateInsight(text: string): Promise<AIInsight | null> {
     const prompt = [
       'Here is a personal journal entry written by a Christian seeking to grow in faith:',
       '',
-      `"${text}"`,
+      '<journal_entry>',
+      text,
+      '</journal_entry>',
       '',
       'As a compassionate Christian mentor, provide a brief response (2–3 sentences) that:',
       '1. Affirms what they have shared without being preachy or generic',

@@ -185,7 +185,7 @@ export async function ragQuery(opts: RagOptions): Promise<RagResult> {
         role: 'user',
         parts: [
           {
-            text: `SYSTEM:\n${SYSTEM_PROMPTS[profile]}\n\nCONTEXT:\n${contextBlock}\n\nQUESTION:\n${question}`,
+            text: `<system>\n${SYSTEM_PROMPTS[profile]}\n</system>\n\n<context>\n${contextBlock}\n</context>\n\n<question>\n${question}\n</question>`,
           },
         ],
       },
