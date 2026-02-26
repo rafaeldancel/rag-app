@@ -182,7 +182,8 @@ interface AIModalProps {
 }
 
 export function AIModal({ open, onClose, initialInput }: AIModalProps) {
-  const { user } = useAuth()
+  const { user, userProfile } = useAuth()
+  const userName = userProfile?.displayName || user?.displayName || 'You'
   const [messages, setMessages] = useState<Message[]>(() => {
     try {
       const saved = sessionStorage.getItem('ai.messages')
@@ -494,11 +495,16 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
                   className={cn('flex', msg.role === 'user' ? 'justify-end' : 'justify-start')}
                 >
                   {msg.role === 'user' ? (
-                    <div className="flex items-end gap-2">
-                      <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-sm leading-relaxed text-primary-foreground">
-                        {msg.text}
+                    <div className="flex max-w-[85%] items-start gap-2">
+                      <div className="flex flex-col items-end gap-0.5">
+                        <span className="text-xs font-medium text-muted-foreground px-1">
+                          {userName}
+                        </span>
+                        <div className="rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-sm leading-relaxed text-primary-foreground">
+                          {msg.text}
+                        </div>
                       </div>
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted mt-4">
                         <User className="h-4 w-4 text-muted-foreground" />
                       </div>
                     </div>
@@ -507,9 +513,12 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
                       <img
                         src="/images/peter-avatar.svg"
                         alt="Peter"
-                        className="h-7 w-7 rounded-full shrink-0 mt-0.5"
+                        className="h-7 w-7 rounded-full shrink-0 mt-4"
                       />
-                      <div className="flex flex-col">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs font-medium text-muted-foreground px-1">
+                          Peter
+                        </span>
                         <div className="rounded-2xl rounded-bl-sm bg-muted px-4 py-3 text-foreground">
                           <MessageText text={msg.text} />
                         </div>
@@ -529,7 +538,7 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
                     <img
                       src="/images/peter-avatar.svg"
                       alt="Peter"
-                      className="h-7 w-7 rounded-full shrink-0 mt-0.5"
+                      className="h-7 w-7 rounded-full shrink-0 mt-4"
                     />
                     <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm bg-muted px-4 py-3">
                       {[0, 1, 2].map(i => (
