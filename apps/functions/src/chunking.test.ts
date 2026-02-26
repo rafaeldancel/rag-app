@@ -63,4 +63,17 @@ describe('chunkText', () => {
     expect(result.length).toBe(2)
     expect(result[1]).toBe(giant)
   })
+
+  it('preserves a short paragraph when immediately followed by a very long one', () => {
+    const short = 'Brief intro sentence.'
+    // ~1400 chars — exceeds default maxChars on its own
+    const veryLong = 'Long sentence here. '.repeat(70).trim()
+    const text = `${short}\n\n${veryLong}`
+    const result = chunkText(text, 1200)
+    // The short paragraph must appear somewhere in the output
+    const combined = result.join('\n\n')
+    expect(combined).toContain(short)
+    // And each chunk must be non-empty
+    expect(result.every(c => c.trim().length > 0)).toBe(true)
+  })
 })
