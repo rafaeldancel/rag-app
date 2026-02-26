@@ -217,19 +217,39 @@ function parseVerses(html: string, book: string, chapter: number): BibleVerse[] 
 /** Authenticated fetch wrapper for the YouVersion Platform API. */
 async function youversionFetch(path: string): Promise<unknown> {
   const url = `${YOUVERSION_BASE}${path}`
-  const res = await fetch(url, {
-    headers: {
-      'x-yvp-app-key': getApiKey(),
-      Accept: 'application/json',
-    },
-  })
+
+  // 10 s timeout — prevents the Cloud Function hanging on a slow upstream
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 10_000)
+
+  let res: Response
+  try {
+    res = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'x-yvp-app-key': getApiKey(),
+        Accept: 'application/json',
+      },
+    })
+  } catch (err) {
+    if ((err as Error).name === 'AbortError') {
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Bible API request timed out.',
+      })
+    }
+    throw err
+  } finally {
+    clearTimeout(timeoutId)
+  }
 
   if (!res.ok) {
+    // Log full upstream details server-side only; send a generic message to the client
     const body = await res.text().catch(() => '(unreadable)')
     console.error(`[YouVersion] ${res.status} ${url}\nBody: ${body}`)
     throw new TRPCError({
       code: res.status === 404 ? 'NOT_FOUND' : 'INTERNAL_SERVER_ERROR',
-      message: `YouVersion API responded with ${res.status}: ${body}`,
+      message: res.status === 404 ? 'Bible passage not found.' : 'Failed to fetch Bible passage.',
     })
   }
 
