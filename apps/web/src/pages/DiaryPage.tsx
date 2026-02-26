@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../providers/AuthProvider'
 import { Plus } from 'lucide-react'
 import { SegmentedControl } from '../components/diary/SegmentedControl'
@@ -109,140 +110,178 @@ export function DiaryPage() {
       <main className="flex-1 overflow-y-auto scrollbar-none space-y-4 pb-20 pt-4">
         <SegmentedControl segments={SEGMENTS} value={tab} onChange={setTab} />
 
-        {/* ── Diary tab ── */}
-        {tab === 'diary' && (
-          <>
-            {entriesQuery.isLoading && (
-              <>
-                <EntrySkeleton />
-                <EntrySkeleton />
-              </>
-            )}
+        <div className="relative overflow-hidden min-h-[300px]">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={tab}
+              initial={{ opacity: 0, x: tab === 'diary' ? -10 : 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: tab === 'diary' ? 10 : -10 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+            >
+              {/* ── Diary tab ── */}
+              {tab === 'diary' && (
+                <div className="space-y-4">
+                  {entriesQuery.isLoading && (
+                    <>
+                      <EntrySkeleton />
+                      <EntrySkeleton />
+                    </>
+                  )}
 
-            {entriesQuery.isError && (
-              <p className="mx-4 text-sm text-muted-foreground">Unable to load entries.</p>
-            )}
+                  {entriesQuery.isError && (
+                    <p className="mx-4 text-sm text-muted-foreground">Unable to load entries.</p>
+                  )}
 
-            {entriesQuery.data?.length === 0 && (
-              <div className="mx-4 flex flex-col items-center gap-2 py-12 text-center">
-                <p className="text-sm font-semibold text-foreground">No entries yet</p>
-                <p className="text-xs text-muted-foreground">
-                  Tap + to write your first journal entry.
-                </p>
-              </div>
-            )}
+                  {entriesQuery.data?.length === 0 && (
+                    <div className="mx-4 flex flex-col items-center gap-2 py-12 text-center">
+                      <p className="text-sm font-semibold text-foreground">No entries yet</p>
+                      <p className="text-xs text-muted-foreground">
+                        Tap + to write your first journal entry.
+                      </p>
+                    </div>
+                  )}
 
-            {entriesQuery.data?.map(entry => (
-              <DiaryEntryCard
-                key={entry.id}
-                title={entry.title}
-                body={entry.text}
-                dateTime={formatDate(entry.createdAt)}
-                aiInsight={entry.aiInsight}
-                onEdit={() => openComposer(entry)}
-                onDelete={() => handleDelete(entry.id)}
-              />
-            ))}
-          </>
-        )}
+                  {entriesQuery.data?.map(entry => (
+                    <motion.div
+                      key={entry.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      layout
+                    >
+                      <DiaryEntryCard
+                        title={entry.title}
+                        body={entry.text}
+                        dateTime={formatDate(entry.createdAt)}
+                        aiInsight={entry.aiInsight}
+                        onEdit={() => openComposer(entry)}
+                        onDelete={() => handleDelete(entry.id)}
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+              )}
 
-        {/* ── Notes tab ── */}
-        {tab === 'notes' && (
-          <>
-            {annotationsQuery.isLoading && (
-              <>
-                <AnnotationSkeleton />
-                <AnnotationSkeleton />
-              </>
-            )}
+              {/* ── Notes tab ── */}
+              {tab === 'notes' && (
+                <div className="space-y-4">
+                  {annotationsQuery.isLoading && (
+                    <>
+                      <AnnotationSkeleton />
+                      <AnnotationSkeleton />
+                    </>
+                  )}
 
-            {annotationsQuery.isError && (
-              <p className="mx-4 text-sm text-muted-foreground">Unable to load notes.</p>
-            )}
+                  {annotationsQuery.isError && (
+                    <p className="mx-4 text-sm text-muted-foreground">Unable to load notes.</p>
+                  )}
 
-            {!annotationsQuery.isLoading && notes.length === 0 && (
-              <div className="mx-4 flex flex-col items-center gap-2 py-12 text-center">
-                <p className="text-sm font-semibold text-foreground">No notes yet</p>
-                <p className="text-xs text-muted-foreground">
-                  Tap a Bible verse and add a note to see it here.
-                </p>
-              </div>
-            )}
+                  {!annotationsQuery.isLoading && notes.length === 0 && (
+                    <div className="mx-4 flex flex-col items-center gap-2 py-12 text-center">
+                      <p className="text-sm font-semibold text-foreground">No notes yet</p>
+                      <p className="text-xs text-muted-foreground">
+                        Tap a Bible verse and add a note to see it here.
+                      </p>
+                    </div>
+                  )}
 
-            {notes.map(a => (
-              <NoteCard
-                key={a.usfm}
-                usfm={a.usfm}
-                reference={a.reference ?? a.usfm}
-                note={a.note!}
-                verseText={a.verseText}
-                createdAt={a.createdAt}
-                isSaving={upsertAnnotation.isPending}
-                onSave={newNote =>
-                  upsertAnnotation.mutateAsync({
-                    userId,
-                    usfm: a.usfm,
-                    note: newNote,
-                  })
-                }
-                onDelete={() =>
-                  deleteAnnotation.mutateAsync({ userId, usfm: a.usfm, field: 'note' })
-                }
-              />
-            ))}
-          </>
-        )}
+                  {notes.map(a => (
+                    <motion.div
+                      key={a.usfm}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      layout
+                    >
+                      <NoteCard
+                        usfm={a.usfm}
+                        reference={a.reference ?? a.usfm}
+                        note={a.note!}
+                        verseText={a.verseText}
+                        createdAt={a.createdAt}
+                        isSaving={upsertAnnotation.isPending}
+                        onSave={newNote =>
+                          upsertAnnotation.mutateAsync({
+                            userId,
+                            usfm: a.usfm,
+                            note: newNote,
+                          })
+                        }
+                        onDelete={() =>
+                          deleteAnnotation.mutateAsync({ userId, usfm: a.usfm, field: 'note' })
+                        }
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+              )}
 
-        {/* ── Highlights tab ── */}
-        {tab === 'highlights' && (
-          <>
-            {annotationsQuery.isLoading && (
-              <>
-                <AnnotationSkeleton />
-                <AnnotationSkeleton />
-              </>
-            )}
+              {/* ── Highlights tab ── */}
+              {tab === 'highlights' && (
+                <div className="space-y-4">
+                  {annotationsQuery.isLoading && (
+                    <>
+                      <AnnotationSkeleton />
+                      <AnnotationSkeleton />
+                    </>
+                  )}
 
-            {annotationsQuery.isError && (
-              <p className="mx-4 text-sm text-muted-foreground">Unable to load highlights.</p>
-            )}
+                  {annotationsQuery.isError && (
+                    <p className="mx-4 text-sm text-muted-foreground">Unable to load highlights.</p>
+                  )}
 
-            {!annotationsQuery.isLoading && highlights.length === 0 && (
-              <div className="mx-4 flex flex-col items-center gap-2 py-12 text-center">
-                <p className="text-sm font-semibold text-foreground">No highlights yet</p>
-                <p className="text-xs text-muted-foreground">
-                  Tap a Bible verse and choose a highlight color to see it here.
-                </p>
-              </div>
-            )}
+                  {!annotationsQuery.isLoading && highlights.length === 0 && (
+                    <div className="mx-4 flex flex-col items-center gap-2 py-12 text-center">
+                      <p className="text-sm font-semibold text-foreground">No highlights yet</p>
+                      <p className="text-xs text-muted-foreground">
+                        Tap a Bible verse and choose a highlight color to see it here.
+                      </p>
+                    </div>
+                  )}
 
-            {highlights.map(a => (
-              <HighlightCard
-                key={a.usfm}
-                usfm={a.usfm}
-                reference={a.reference ?? a.usfm}
-                highlight={a.highlight!}
-                verseText={a.verseText}
-                createdAt={a.createdAt}
-                onDelete={() =>
-                  deleteAnnotation.mutateAsync({ userId, usfm: a.usfm, field: 'highlight' })
-                }
-              />
-            ))}
-          </>
-        )}
+                  {highlights.map(a => (
+                    <motion.div
+                      key={a.usfm}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      layout
+                    >
+                      <HighlightCard
+                        usfm={a.usfm}
+                        reference={a.reference ?? a.usfm}
+                        highlight={a.highlight!}
+                        verseText={a.verseText}
+                        createdAt={a.createdAt}
+                        onDelete={() =>
+                          deleteAnnotation.mutateAsync({ userId, usfm: a.usfm, field: 'highlight' })
+                        }
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </main>
 
       {/* FAB — only on the diary tab */}
-      {tab === 'diary' && (
-        <button
-          onClick={() => openComposer()}
-          aria-label="New diary entry"
-          className="absolute bottom-24 right-4 z-10 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform active:scale-95"
-        >
-          <Plus className="h-6 w-6" />
-        </button>
-      )}
+      <AnimatePresence>
+        {tab === 'diary' && (
+          <motion.button
+            key="fab"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => openComposer()}
+            aria-label="New diary entry"
+            className="absolute bottom-24 right-4 z-10 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg"
+          >
+            <Plus className="h-6 w-6" />
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       <DiaryComposer
         open={composerOpen}

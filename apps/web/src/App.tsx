@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { AppShell } from './components/layout/AppShell'
 import { BottomNav } from './components/layout/BottomNav'
 import { AIModal } from './components/layout/AIModal'
@@ -76,79 +77,90 @@ function MainLayout({ aiOpen, setAiOpen, aiPrefill, setAiPrefill, openAI }: Main
 
   return (
     <AppShell>
-      <Routes>
-        {/* Public / Auth Flow */}
-        <Route path="/splash" element={<SplashPage />} />
-        <Route path="/welcome" element={<Navigate to="/landing" replace />} />
-        <Route
-          path="/landing"
-          element={
-            <PublicRoute>
-              <LandingPage />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/auth"
-          element={
-            <PublicRoute>
-              <AuthPage />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/onboarding"
-          element={
-            <OnboardingGuard>
-              <OnboardingPage />
-            </OnboardingGuard>
-          }
-        />
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={location.pathname}
+          initial={{ opacity: 0, x: 5 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -5 }}
+          transition={{ duration: 0.15, ease: 'easeOut' }}
+          className="flex-1 flex flex-col min-h-0"
+        >
+          <Routes location={location} key={location.pathname}>
+            {/* Public / Auth Flow */}
+            <Route path="/splash" element={<SplashPage />} />
+            <Route path="/welcome" element={<Navigate to="/landing" replace />} />
+            <Route
+              path="/landing"
+              element={
+                <PublicRoute>
+                  <LandingPage />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/auth"
+              element={
+                <PublicRoute>
+                  <AuthPage />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/onboarding"
+              element={
+                <OnboardingGuard>
+                  <OnboardingPage />
+                </OnboardingGuard>
+              }
+            />
 
-        {/* Protected / Main App */}
-        <Route path="/" element={<SplashGate />} />
-        <Route
-          path="/today"
-          element={
-            <ProtectedRoute>
-              <TodayPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/bible/:book/:chapter"
-          element={
-            <ProtectedRoute>
-              <BiblePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/bible"
-          element={
-            <ProtectedRoute>
-              <BibleRedirect />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/diary"
-          element={
-            <ProtectedRoute>
-              <DiaryPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={<Navigate to="/splash" replace />} />
-      </Routes>
+            {/* Protected / Main App */}
+            <Route path="/" element={<SplashGate />} />
+            <Route
+              path="/today"
+              element={
+                <ProtectedRoute>
+                  <TodayPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/bible/:book/:chapter"
+              element={
+                <ProtectedRoute>
+                  <BiblePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/bible"
+              element={
+                <ProtectedRoute>
+                  <BibleRedirect />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/diary"
+              element={
+                <ProtectedRoute>
+                  <DiaryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/splash" replace />} />
+          </Routes>
+        </motion.div>
+      </AnimatePresence>
 
       {!shouldHideNav && (
         <>

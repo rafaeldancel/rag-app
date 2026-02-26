@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { BookOpen, BookMarked, PenLine, User } from 'lucide-react'
 import { AITriggerButton } from './AITriggerButton'
 import { cn } from '@repo/ui/utils'
@@ -44,15 +45,19 @@ export function BottomNav({ onAIPress, aiOpen = false }: BottomNavProps) {
           {NAV_ITEMS.slice(0, 2).map(({ to, icon: Icon, label }) => (
             <NavLink key={to} to={to}>
               {({ isActive }) => (
-                <div
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
                   className={cn(
                     'flex flex-col items-center gap-0.5 transition-colors',
                     isActive ? 'text-primary' : 'text-muted-foreground'
                   )}
                 >
-                  <Icon className="h-5 w-5" />
+                  <Icon
+                    className={cn('h-5 w-5', isActive && 'animate-in zoom-in-75 duration-300')}
+                  />
                   <span className="text-[10px] font-medium">{label}</span>
-                </div>
+                </motion.div>
               )}
             </NavLink>
           ))}
@@ -66,15 +71,19 @@ export function BottomNav({ onAIPress, aiOpen = false }: BottomNavProps) {
           {NAV_ITEMS.slice(2, 4).map(({ to, icon: Icon, label }) => (
             <NavLink key={to} to={to}>
               {({ isActive }) => (
-                <div
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
                   className={cn(
                     'flex flex-col items-center gap-0.5 transition-colors',
                     isActive ? 'text-primary' : 'text-muted-foreground'
                   )}
                 >
-                  <Icon className="h-5 w-5" />
+                  <Icon
+                    className={cn('h-5 w-5', isActive && 'animate-in zoom-in-75 duration-300')}
+                  />
                   <span className="text-[10px] font-medium">{label}</span>
-                </div>
+                </motion.div>
               )}
             </NavLink>
           ))}

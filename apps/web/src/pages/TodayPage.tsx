@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { BookOpen, ChevronRight, Sparkles, MessageCircle, Compass } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { StreakHeader } from '../components/today/StreakHeader'
 import { DailyVerseCard } from '../components/today/DailyVerseCard'
 import { DailyPrayerCard } from '../components/today/DailyPrayerCard'
@@ -21,6 +22,23 @@ function VotdSkeleton() {
       </div>
     </div>
   )
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const containerVariants: any = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const itemVariants: any = {
+  hidden: { opacity: 0, y: 10 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.33, 1, 0.68, 1] } },
 }
 
 export function TodayPage() {
@@ -86,16 +104,28 @@ export function TodayPage() {
     (lastPosition ? `${lastPosition.book} ${lastPosition.chapter}` : 'John 3')
 
   return (
-    <main className="flex-1 overflow-y-auto scrollbar-none space-y-4 pb-4">
-      <StreakHeader date={today} streakCount={streakCount} />
+    <motion.main
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="flex-1 overflow-y-auto scrollbar-none space-y-4 pb-4"
+    >
+      <motion.div variants={itemVariants}>
+        <StreakHeader date={today} streakCount={streakCount} />
+      </motion.div>
 
       {/* Greeting */}
-      <div className="px-4 pt-2">
+      <motion.div variants={itemVariants} className="px-4 pt-2">
         <h1 className="text-2xl font-serif text-foreground">{greeting}</h1>
-      </div>
+      </motion.div>
 
       {/* User Journey Card */}
-      <div className="px-4 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-[100ms] fill-mode-both">
+      <motion.div
+        variants={itemVariants}
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.99 }}
+        className="px-4"
+      >
         <div className="bg-card border border-border rounded-xl p-4 shadow-sm flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-foreground">Spiritual Profile</span>
@@ -110,9 +140,11 @@ export function TodayPage() {
                 <span>Intuition</span>
               </div>
               <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-                <div
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(worldview.epistemology / 10) * 100}%` }}
+                  transition={{ duration: 0.8, delay: 0.2, ease: [0.34, 1.56, 0.64, 1] }}
                   className="h-full bg-primary"
-                  style={{ width: `${(worldview.epistemology / 10) * 100}%` }}
                 />
               </div>
             </div>
@@ -123,9 +155,11 @@ export function TodayPage() {
                 <span>Seeker</span>
               </div>
               <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-                <div
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(worldview.openness / 10) * 100}%` }}
+                  transition={{ duration: 0.8, delay: 0.3, ease: [0.34, 1.56, 0.64, 1] }}
                   className="h-full bg-primary"
-                  style={{ width: `${(worldview.openness / 10) * 100}%` }}
                 />
               </div>
             </div>
@@ -136,30 +170,35 @@ export function TodayPage() {
                 <span>Supernaturalist</span>
               </div>
               <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-                <div
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(worldview.metaphysics / 10) * 100}%` }}
+                  transition={{ duration: 0.8, delay: 0.4, ease: [0.34, 1.56, 0.64, 1] }}
                   className="h-full bg-primary"
-                  style={{ width: `${(worldview.metaphysics / 10) * 100}%` }}
                 />
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Discovery Topics (if any) */}
       {discoveryTopics.length > 0 && (
-        <section className="space-y-3 pt-2 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-[200ms] fill-mode-both">
-          <div className="px-4">
+        <section className="space-y-3 pt-2">
+          <motion.div variants={itemVariants} className="px-4">
             <h2 className="text-sm font-semibold text-muted-foreground capitalize tracking-wide flex items-center gap-2">
               <Compass className="h-4 w-4 text-primary" /> Start Exploring
             </h2>
-          </div>
+          </motion.div>
           <div className="flex gap-4 overflow-x-auto scrollbar-none px-4 pb-2 snap-x snap-mandatory hide-scroll">
             {discoveryTopics.map((topic, i) => (
-              <button
+              <motion.button
                 key={i}
+                variants={itemVariants}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => openAI(topic)}
-                className="shrink-0 snap-start w-56 sm:w-64 bg-card border border-border rounded-xl p-4 text-left transition-all hover:scale-[1.02] hover:shadow-md active:scale-95 flex flex-col gap-3 shadow-sm relative overflow-hidden group"
+                className="shrink-0 snap-start w-56 sm:w-64 bg-card border border-border rounded-xl p-4 text-left transition-all flex flex-col gap-3 shadow-sm relative overflow-hidden group"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary relative z-10">
@@ -168,29 +207,61 @@ export function TodayPage() {
                 <h3 className="text-foreground font-medium line-clamp-2 leading-snug relative z-10">
                   {topic}
                 </h3>
-              </button>
+              </motion.button>
             ))}
           </div>
         </section>
       )}
 
-      {votd.isLoading && <VotdSkeleton />}
-      {votd.isError && (
-        <p className="mx-4 text-sm text-muted-foreground">Unable to load today's verse.</p>
-      )}
-      {votd.data && (
-        <DailyVerseCard
-          reference={votd.data.reference}
-          text={votd.data.text}
-          onReadChapter={handleReadChapter}
-        />
-      )}
+      <motion.div variants={itemVariants}>
+        <AnimatePresence mode="wait">
+          {votd.isLoading ? (
+            <motion.div
+              key="skeleton"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <VotdSkeleton />
+            </motion.div>
+          ) : votd.isError ? (
+            <motion.p
+              key="error"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="mx-4 text-sm text-muted-foreground"
+            >
+              Unable to load today's verse.
+            </motion.p>
+          ) : (
+            <motion.div
+              key="content"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <DailyVerseCard
+                reference={votd.data?.reference ?? ''}
+                text={votd.data?.text ?? ''}
+                onReadChapter={handleReadChapter}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
       {/* Daily Insight Placeholder */}
-      <div className="px-4 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-[400ms] fill-mode-both">
+      <motion.div
+        variants={itemVariants}
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.98 }}
+        className="px-4 text-left"
+      >
         <button
           onClick={() => openAI('What is my daily insight for today?')}
-          className="w-full bg-card hover:bg-card/80 border border-border rounded-xl p-4 text-left transition-all shadow-sm flex gap-4 items-center group active:scale-[0.98]"
+          className="w-full bg-card hover:bg-card/80 border border-border rounded-xl p-4 text-left shadow-sm flex gap-4 items-center group"
         >
           <div className="h-12 w-12 shrink-0 rounded-full overflow-hidden bg-secondary border border-border">
             <img
@@ -208,15 +279,44 @@ export function TodayPage() {
             </p>
           </div>
         </button>
-      </div>
+      </motion.div>
 
-      <DailyPrayerCard
-        text={prayer.data?.text}
-        basedOn={prayer.data?.basedOn}
-        isLoading={prayer.isLoading}
-      />
+      <motion.div variants={itemVariants}>
+        <AnimatePresence mode="wait">
+          {prayer.isLoading ? (
+            <motion.div
+              key="skeleton-prayer"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="mx-4 rounded-xl border bg-card p-4 shadow-soft"
+            >
+              <Skeleton className="mb-3 h-3 w-32" />
+              <Skeleton className="mb-2 h-4 w-full" />
+              <Skeleton className="mb-2 h-4 w-5/6" />
+              <Skeleton className="mb-4 h-4 w-4/6" />
+              <Skeleton className="h-7 w-24 rounded-full" />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="content-prayer"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <DailyPrayerCard
+                text={prayer.data?.text}
+                basedOn={prayer.data?.basedOn}
+                isLoading={false}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
-      <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-[500ms] fill-mode-both pb-8">
+      <motion.div variants={itemVariants} className="pb-8">
         <button
           onClick={handleContinueReading}
           className="mx-4 flex w-[calc(100%-2rem)] items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-soft text-left group hover:shadow-md transition-all active:scale-[0.98]"
@@ -232,7 +332,7 @@ export function TodayPage() {
           </div>
           <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
         </button>
-      </div>
-    </main>
+      </motion.div>
+    </motion.main>
   )
 }
