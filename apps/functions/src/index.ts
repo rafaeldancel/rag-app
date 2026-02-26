@@ -1,4 +1,5 @@
 import * as admin from 'firebase-admin'
+import { createHash } from 'crypto'
 import { onCall, onRequest } from 'firebase-functions/v2/https'
 import { defineSecret } from 'firebase-functions/params'
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch'
@@ -42,11 +43,21 @@ export const ingestFromApi = onCall({ cors: true, region: 'us-central1' }, async
   const url = String(req.data?.url || '')
   if (!url) throw new Error('Missing url')
 
+  // Derive a stable docId from the URL so the same source is never ingested twice
+  const docId = createHash('sha256').update(url).digest('hex').slice(0, 20)
+  const docRef = db.doc(`docs/${docId}`)
+  const existing = await docRef.get()
+
+  if (existing.exists) {
+    const chunkCount = (await docRef.collection('chunks').count().get()).data().count
+    return { docId, chunkCount, cached: true }
+  }
+
   const res = await fetch(url)
   if (!res.ok) throw new Error(`Fetch failed: ${res.status}`)
   const raw = await res.text()
 
-  const docRef = await db.collection('docs').add({
+  await docRef.set({
     sourceType: 'api',
     sourceUri: url,
     title: url,
@@ -60,10 +71,10 @@ export const ingestFromApi = onCall({ cors: true, region: 'us-central1' }, async
   const chunkItems = chunks.map((text: string, i: number) => ({ text, vector: vectors[i] }))
   const BATCH_MAX = 400
   for (let i = 0; i < chunkItems.length; i += BATCH_MAX) {
-    await batchStoreChunks(docRef.id, chunkItems.slice(i, i + BATCH_MAX), i)
+    await batchStoreChunks(docId, chunkItems.slice(i, i + BATCH_MAX), i)
   }
 
-  return { docId: docRef.id, chunkCount: chunks.length }
+  return { docId, chunkCount: chunks.length }
 })
 
 // ── Ingest from Cloud Storage ──────────────────────────────────────
