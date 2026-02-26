@@ -14,6 +14,48 @@ import { appRouter } from './trpc/router'
 admin.initializeApp()
 const db = admin.firestore()
 
+// ── URL validation (SSRF guard) ───────────────────────────────────
+
+/**
+ * Validates an ingest URL, rejecting non-HTTP(S) schemes and
+ * private/metadata network targets to prevent SSRF attacks.
+ */
+function validateIngestUrl(raw: string): URL {
+  let parsed: URL
+  try {
+    parsed = new URL(raw)
+  } catch {
+    throw new Error('Invalid URL format')
+  }
+
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new Error('Only http and https URLs are allowed')
+  }
+
+  const hostname = parsed.hostname.toLowerCase()
+
+  // Block known metadata and loopback endpoints
+  const BLOCKED_HOSTS = [
+    'metadata.google.internal',
+    'metadata.goog',
+    '169.254.169.254', // GCP/AWS link-local metadata
+    '127.0.0.1',
+    'localhost',
+    '::1',
+    '0.0.0.0',
+  ]
+  if (BLOCKED_HOSTS.some(h => hostname === h || hostname.endsWith('.' + h))) {
+    throw new Error('URL target is not allowed')
+  }
+
+  // Block RFC 1918 private IP ranges
+  if (/^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.)/.test(hostname)) {
+    throw new Error('URL target is not allowed')
+  }
+
+  return parsed
+}
+
 // ── Chat (RAG Pipeline) ───────────────────────────────────────────
 
 export const chat = onCall({ cors: true, region: ENV.location }, async req => {
@@ -51,6 +93,9 @@ export const ingestFromApi = onCall({ cors: true, region: 'us-central1' }, async
   const url = String(req.data?.url || '')
   if (!url) throw new Error('Missing url')
 
+  // Validate URL — rejects private/metadata targets and non-HTTP(S) schemes
+  const validatedUrl = validateIngestUrl(url)
+
   // Derive a stable docId from the URL so the same source is never ingested twice
   const docId = createHash('sha256').update(url).digest('hex').slice(0, 20)
   const docRef = db.doc(`docs/${docId}`)
@@ -61,7 +106,18 @@ export const ingestFromApi = onCall({ cors: true, region: 'us-central1' }, async
     return { docId, chunkCount, cached: true }
   }
 
-  const res = await fetch(url)
+  // Fetch with a 30 s timeout to prevent hanging the function
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 30_000)
+  let res: Response
+  try {
+    res = await fetch(validatedUrl.href, { signal: controller.signal })
+  } catch (err) {
+    if ((err as Error).name === 'AbortError') throw new Error('URL fetch timed out after 30 s')
+    throw err
+  } finally {
+    clearTimeout(timeoutId)
+  }
   if (!res.ok) throw new Error(`Fetch failed: ${res.status}`)
   const raw = await res.text()
 
