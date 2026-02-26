@@ -317,6 +317,17 @@ export const bibleRouter = router({
 
       const verses = parseVerses(data.content, book, chapter)
 
+      if (verses.length === 0) {
+        console.error(
+          '[YouVersion] parseVerses returned 0 verses. Raw content (first 300):',
+          data.content.slice(0, 300)
+        )
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to parse chapter verses — YouVersion HTML structure may have changed.',
+        })
+      }
+
       return BibleChapterSchema.parse({
         reference: usfmToReference(`${book}.${chapter}`),
         book,
