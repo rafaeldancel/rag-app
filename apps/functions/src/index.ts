@@ -8,6 +8,7 @@ import { embedTexts } from './embeddings'
 import { batchStoreChunks } from './firestoreSearch'
 import { chunkText } from './chunking'
 import { ragQuery, type PromptProfile } from './rag'
+import { checkRateLimit } from './rateLimit'
 import { appRouter } from './trpc/router'
 
 admin.initializeApp()
@@ -25,6 +26,10 @@ export const chat = onCall({ cors: true, region: ENV.location }, async req => {
 
   if (!question) throw new Error('Missing question')
 
+  // 50 RAG queries per 24 h per caller (uid if authed, else anonymous pool)
+  const rateLimitKey = `chat:${req.auth?.uid ?? 'anonymous'}`
+  await checkRateLimit(rateLimitKey, 50, 86_400_000)
+
   const result = await ragQuery({ question, profile })
 
   return {
@@ -39,6 +44,9 @@ export const chat = onCall({ cors: true, region: ENV.location }, async req => {
 
 export const ingestFromApi = onCall({ cors: true, region: 'us-central1' }, async req => {
   if (!req.auth) throw new Error('Unauthorized - must be logged in')
+
+  // 10 ingestions per 24 h per authenticated user
+  await checkRateLimit(`ingest:${req.auth.uid}`, 10, 86_400_000)
 
   const url = String(req.data?.url || '')
   if (!url) throw new Error('Missing url')
