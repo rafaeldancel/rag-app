@@ -7,9 +7,13 @@ export const HighlightColorSchema = z.enum(['yellow', 'red', 'blue', 'green']).n
 // ─── Input schemas ────────────────────────────────────────────────────────────
 
 export const UpsertAnnotationInputSchema = z.object({
-  userId: z.string(),
+  userId: z
+    .string()
+    .min(1)
+    .max(128)
+    .refine(s => !s.includes('/'), 'Invalid user ID'),
   /** Full USFM address — e.g. "JHN.3.16" */
-  usfm: z.string(),
+  usfm: z.string().regex(/^[A-Z0-9]{2,4}\.\d{1,3}(\.\d{1,3})?$/, 'Invalid USFM format'),
   highlight: HighlightColorSchema.optional(),
   note: z.string().max(2000).optional(),
   /** Human-readable reference, e.g. "John 3:16" */
@@ -19,20 +23,32 @@ export const UpsertAnnotationInputSchema = z.object({
 })
 
 export const GetAnnotationsInputSchema = z.object({
-  userId: z.string(),
+  userId: z
+    .string()
+    .min(1)
+    .max(128)
+    .refine(s => !s.includes('/'), 'Invalid user ID'),
   /** USFM book code — e.g. "JHN" */
-  book: z.string(),
-  chapter: z.number().int().min(1),
+  book: z.string().regex(/^[A-Z0-9]{2,4}$/, 'Invalid USFM book code'),
+  chapter: z.number().int().min(1).max(150),
 })
 
 export const ListAnnotationsInputSchema = z.object({
-  userId: z.string(),
+  userId: z
+    .string()
+    .min(1)
+    .max(128)
+    .refine(s => !s.includes('/'), 'Invalid user ID'),
 })
 
 export const DeleteAnnotationInputSchema = z.object({
-  userId: z.string(),
+  userId: z
+    .string()
+    .min(1)
+    .max(128)
+    .refine(s => !s.includes('/'), 'Invalid user ID'),
   /** Full USFM address — e.g. "JHN.3.16" */
-  usfm: z.string(),
+  usfm: z.string().regex(/^[A-Z0-9]{2,4}\.\d{1,3}(\.\d{1,3})?$/, 'Invalid USFM format'),
 })
 
 // ─── Response schemas ─────────────────────────────────────────────────────────

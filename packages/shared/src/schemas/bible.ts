@@ -24,8 +24,9 @@ export const GetVotdInputSchema = z.object({
 
 export const GetChapterInputSchema = z.object({
   /** USFM book code — e.g. "JHN", "GEN", "1KI" */
-  book: z.string().min(2).max(5),
-  chapter: z.number().int().min(1),
+  book: z.string().regex(/^[A-Z0-9]{2,4}$/, 'Invalid USFM book code'),
+  /** Chapter number — capped at 150 (Psalm 150 is the longest book by chapters). */
+  chapter: z.number().int().min(1).max(150),
   /** YouVersion version ID. Defaults to NIV (111). */
   versionId: z.number().int().positive().default(BIBLE_VERSIONS.NIV),
 })
