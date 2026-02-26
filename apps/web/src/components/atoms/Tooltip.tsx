@@ -1,3 +1,4 @@
+import { useState, useRef } from 'react'
 import { cn } from '@repo/ui/utils'
 
 interface TooltipProps {
@@ -7,19 +8,34 @@ interface TooltipProps {
 }
 
 export function Tooltip({ label, children, side = 'top' }: TooltipProps) {
+  const [rect, setRect] = useState<DOMRect | null>(null)
+  const ref = useRef<HTMLDivElement>(null)
+
   return (
-    <div className="group/tip relative flex">
+    <div
+      ref={ref}
+      className={cn('flex')}
+      onMouseEnter={() => setRect(ref.current?.getBoundingClientRect() ?? null)}
+      onMouseLeave={() => setRect(null)}
+    >
       {children}
-      <span
-        className={cn(
-          'pointer-events-none absolute left-1/2 z-50 -translate-x-1/2 whitespace-nowrap',
-          'rounded-md bg-foreground px-2 py-1 text-[11px] font-medium text-background shadow-sm',
-          'opacity-0 transition-opacity duration-150 group-hover/tip:opacity-100',
-          side === 'top' ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
-        )}
-      >
-        {label}
-      </span>
+      {rect && (
+        <span
+          style={{
+            position: 'fixed',
+            left: rect.left + rect.width / 2,
+            top: side === 'top' ? rect.top : rect.bottom,
+            transform:
+              side === 'top'
+                ? 'translateX(-50%) translateY(calc(-100% - 6px))'
+                : 'translateX(-50%) translateY(6px)',
+            zIndex: 9999,
+          }}
+          className="pointer-events-none whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-[11px] font-medium text-background shadow-sm"
+        >
+          {label}
+        </span>
+      )}
     </div>
   )
 }

@@ -30,8 +30,12 @@ export function Verse({
   return (
     <p
       onClick={onPress}
+      style={{
+        fontFamily: 'var(--reader-font, "Lora", Georgia, serif)',
+        fontSize: 'var(--reader-size, 17px)',
+      }}
       className={cn(
-        'px-4 py-2 font-serif text-[17px] leading-[1.8] text-foreground',
+        'px-4 py-2 leading-[1.8] text-foreground',
         'cursor-pointer rounded-md transition-colors',
         highlightClass || 'hover:bg-muted/60',
         className

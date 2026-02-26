@@ -58,7 +58,7 @@ export function ReaderToolbar({
 
       {/* Right actions */}
       <div className="flex items-center gap-1">
-        <Tooltip label="Search">
+        <Tooltip label="Search" side="bottom">
           <button
             onClick={onSearch}
             aria-label="Search"
@@ -67,7 +67,7 @@ export function ReaderToolbar({
             <Search className="h-4 w-4 text-muted-foreground" />
           </button>
         </Tooltip>
-        <Tooltip label="Reader settings">
+        <Tooltip label="Reader settings" side="bottom">
           <button
             onClick={onSettings}
             aria-label="Reader settings"

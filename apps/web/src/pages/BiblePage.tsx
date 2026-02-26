@@ -3,6 +3,8 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { BIBLE_VERSIONS } from '@repo/shared'
 import { ReaderToolbar } from '../components/bible/ReaderToolbar'
 import { ChapterPicker } from '../components/bible/ChapterPicker'
+import { BibleSearchModal } from '../components/bible/BibleSearchModal'
+import { BibleSettingsModal, FONT_FAMILY } from '../components/bible/BibleSettingsModal'
 import { ChapterSection, type SelectedVerse } from '../components/bible/ChapterSection'
 import { VerseAnnotationModal } from '../components/bible/VerseAnnotationModal'
 import { NoteInputModal } from '../components/bible/NoteInputModal'
@@ -10,6 +12,7 @@ import { useBooks } from '../hooks/useBible'
 import { useUpsertAnnotation } from '../hooks/useAnnotations'
 import { useAIModal } from '../lib/AIModalContext'
 import { useReadingProgress } from '../hooks/useReadingProgress'
+import { useBibleSettings } from '../hooks/useBibleSettings'
 import type { HighlightColor, BibleBook } from '@repo/shared'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -50,7 +53,11 @@ export function BiblePage() {
   // ── Cross-chapter verse selection: Map<usfm, SelectedVerse> ─────────────
   const [selectedVerses, setSelectedVerses] = useState<Map<string, SelectedVerse>>(new Map())
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [noteModalOpen, setNoteModalOpen] = useState(false)
+
+  const { settings, update: updateSettings } = useBibleSettings()
 
   const annotationOpen = selectedVerses.size > 0
 
@@ -284,7 +291,16 @@ export function BiblePage() {
 
   return (
     <>
-      <main ref={mainRef} className="flex-1 overflow-y-auto scrollbar-none">
+      <main
+        ref={mainRef}
+        className="flex-1 overflow-y-auto scrollbar-none"
+        style={
+          {
+            '--reader-font': FONT_FAMILY[settings.font],
+            '--reader-size': `${12 + settings.fontScale}px`,
+          } as React.CSSProperties
+        }
+      >
         {/* Sticky toolbar — always visible, updates to show current chapter */}
         <div className="sticky top-0 z-10 bg-background">
           <ReaderToolbar
@@ -293,6 +309,8 @@ export function BiblePage() {
             versions={Object.keys(VERSIONS)}
             onTranslationChange={handleTranslationChange}
             onChapterChange={() => setPickerOpen(true)}
+            onSearch={() => setSearchOpen(true)}
+            onSettings={() => setSettingsOpen(true)}
           />
         </div>
 
@@ -343,6 +361,30 @@ export function BiblePage() {
         currentChapter={visibleChapter}
         onSelect={navigateTo}
         onClose={() => setPickerOpen(false)}
+      />
+
+      <BibleSearchModal
+        open={searchOpen}
+        books={booksQuery.data ?? []}
+        currentBook={visibleBook}
+        currentChapter={visibleChapter}
+        onSelect={(b, ch) => {
+          navigateTo(b, ch)
+          setSearchOpen(false)
+        }}
+        onClose={() => setSearchOpen(false)}
+      />
+
+      <BibleSettingsModal
+        open={settingsOpen}
+        settings={settings}
+        versions={Object.keys(VERSIONS)}
+        currentVersion={versionKey}
+        onVersionChange={key => {
+          handleTranslationChange(key)
+        }}
+        onSettingsChange={updateSettings}
+        onClose={() => setSettingsOpen(false)}
       />
     </>
   )
