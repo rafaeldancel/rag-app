@@ -104,6 +104,12 @@ export const diaryRouter = router({
       }
 
       const snap = await ref.get()
+      if (!snap.exists) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to read created entry.',
+        })
+      }
       return toEntry(snap.id, snap.data()!)
     }),
 
@@ -133,6 +139,9 @@ export const diaryRouter = router({
       }
 
       const snap = await ref.get()
+      if (!snap.exists) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Diary entry not found after update.' })
+      }
       return toEntry(snap.id, snap.data()!)
     }),
 

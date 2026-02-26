@@ -41,7 +41,13 @@ export const annotationsRouter = router({
       await ref.set(update, { merge: true })
 
       const snap = await ref.get()
-      const data = snap.data()!
+      const data = snap.data()
+      if (!data) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to read annotation after write.',
+        })
+      }
 
       return AnnotationSchema.parse({
         usfm: data.usfm ?? input.usfm,
