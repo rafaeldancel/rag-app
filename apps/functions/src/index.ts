@@ -119,7 +119,23 @@ export const ingestFromApi = onCall({ cors: true, region: 'us-central1' }, async
     clearTimeout(timeoutId)
   }
   if (!res.ok) throw new Error(`Fetch failed: ${res.status}`)
+
+  // Only accept text-based content — reject images, binaries, etc.
+  const contentType = res.headers.get('content-type') ?? ''
+  const ALLOWED_TYPES = ['text/', 'application/json', 'application/xml', 'application/xhtml']
+  if (!ALLOWED_TYPES.some(t => contentType.includes(t))) {
+    throw new Error(
+      `Unsupported content type: ${contentType}. Only text documents can be ingested.`
+    )
+  }
+
   const raw = await res.text()
+
+  // Reject documents over 5 MB to avoid runaway embedding costs
+  const MAX_BYTES = 5 * 1024 * 1024
+  if (raw.length > MAX_BYTES) {
+    throw new Error('Document too large (max 5 MB)')
+  }
 
   await docRef.set({
     sourceType: 'api',
