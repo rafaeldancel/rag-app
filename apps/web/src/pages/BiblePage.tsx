@@ -93,9 +93,14 @@ export function BiblePage() {
   useEffect(() => {
     localStorage.setItem(
       'bible.lastPosition',
-      JSON.stringify({ book: visibleBook, chapter: visibleChapter, version: versionKey })
+      JSON.stringify({
+        book: visibleBook,
+        chapter: visibleChapter,
+        version: versionKey,
+        reference: visibleRef,
+      })
     )
-  }, [visibleBook, visibleChapter, versionKey])
+  }, [visibleBook, visibleChapter, versionKey, visibleRef])
 
   // ── Scroll container ref (needed for scroll-position correction on prepend) ─
   const mainRef = useRef<HTMLElement>(null)

@@ -67,8 +67,10 @@ export function ChapterSection({
     ? `${localizedBookName} ${chapter}`
     : chapterQuery.data?.reference ?? `${book} ${chapter}`
 
-  // Fire onVisible when heading scrolls into the top 30 % of the viewport.
-  // rootMargin '0px 0px -70% 0px' means the bottom threshold is at 30 % of viewport height.
+  // Fire onVisible when heading scrolls into the top 10 % of the viewport.
+  // rootMargin '0px 0px -90% 0px' means the bottom threshold is at 10 % of viewport height.
+  // Using 10% (instead of a wider zone) prevents the next chapter from being recorded as
+  // "current" while the user is still reading the previous chapter.
   useEffect(() => {
     const el = headingRef.current
     if (!el) return
@@ -76,7 +78,7 @@ export function ChapterSection({
       ([entry]) => {
         if (entry.isIntersecting) onVisible(book, chapter, chapterRef)
       },
-      { rootMargin: '0px 0px -70% 0px' }
+      { rootMargin: '0px 0px -90% 0px' }
     )
     observer.observe(el)
     return () => observer.disconnect()
