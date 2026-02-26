@@ -146,12 +146,31 @@ export const ingestFromApi = onCall({ cors: true, region: 'us-central1' }, async
   })
 
   const chunks = chunkText(raw)
-  const vectors = await embedTexts(chunks)
 
-  const chunkItems = chunks.map((text: string, i: number) => ({ text, vector: vectors[i] }))
-  const BATCH_MAX = 400
-  for (let i = 0; i < chunkItems.length; i += BATCH_MAX) {
-    await batchStoreChunks(docId, chunkItems.slice(i, i + BATCH_MAX), i)
+  // Embed — delete the doc header if this fails so no orphan exists
+  let vectors: number[][]
+  try {
+    vectors = await embedTexts(chunks)
+  } catch (err) {
+    await docRef.delete()
+    throw err
+  }
+
+  if (vectors.length !== chunks.length) {
+    await docRef.delete()
+    throw new Error(`Embedding count mismatch: expected ${chunks.length}, got ${vectors.length}`)
+  }
+
+  // Batch write — delete the doc header on any failure to keep storage consistent
+  try {
+    const chunkItems = chunks.map((text: string, i: number) => ({ text, vector: vectors[i] }))
+    const BATCH_MAX = 400
+    for (let i = 0; i < chunkItems.length; i += BATCH_MAX) {
+      await batchStoreChunks(docId, chunkItems.slice(i, i + BATCH_MAX), i)
+    }
+  } catch (err) {
+    await docRef.delete()
+    throw err
   }
 
   return { docId, chunkCount: chunks.length }
