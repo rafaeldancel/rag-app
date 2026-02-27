@@ -1,4 +1,5 @@
 import { useRef, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useBibleChapter, useBooks } from '../../hooks/useBible'
 import { useChapterAnnotations } from '../../hooks/useAnnotations'
 import { Verse } from './Verse'
@@ -100,38 +101,61 @@ export function ChapterSection({
         <span className="text-6xl font-bold leading-tight text-foreground">{chapterNum}</span>
       </div>
 
-      {chapterQuery.isLoading && <ChapterSkeleton />}
+      <AnimatePresence mode="wait">
+        {chapterQuery.isLoading ? (
+          <motion.div
+            key="skeleton"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <ChapterSkeleton />
+          </motion.div>
+        ) : chapterQuery.isError ? (
+          <motion.p
+            key="error"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="px-4 py-6 text-center text-sm text-muted-foreground"
+          >
+            Unable to load this chapter.
+          </motion.p>
+        ) : (
+          <motion.div
+            key="content"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            {chapterQuery.data?.verses.map(verse => (
+              <Verse
+                key={verse.usfm}
+                number={verse.number}
+                text={verse.text}
+                selected={selectedUsfms.has(verse.usfm)}
+                highlightColor={annotationMap[verse.usfm]?.highlight ?? null}
+                onPress={() =>
+                  onVersePress({
+                    usfm: verse.usfm,
+                    number: verse.number,
+                    text: verse.text,
+                    chapterRef,
+                    annotation: annotationMap[verse.usfm] ?? null,
+                  })
+                }
+              />
+            ))}
 
-      {chapterQuery.isError && (
-        <p className="px-4 py-6 text-center text-sm text-muted-foreground">
-          Unable to load this chapter.
-        </p>
-      )}
-
-      {chapterQuery.data?.verses.map(verse => (
-        <Verse
-          key={verse.usfm}
-          number={verse.number}
-          text={verse.text}
-          selected={selectedUsfms.has(verse.usfm)}
-          highlightColor={annotationMap[verse.usfm]?.highlight ?? null}
-          onPress={() =>
-            onVersePress({
-              usfm: verse.usfm,
-              number: verse.number,
-              text: verse.text,
-              chapterRef,
-              annotation: annotationMap[verse.usfm] ?? null,
-            })
-          }
-        />
-      ))}
-
-      {chapterQuery.data?.copyright && (
-        <p className="px-6 pb-4 text-center text-[11px] leading-relaxed text-muted-foreground">
-          {chapterQuery.data.copyright}
-        </p>
-      )}
+            {chapterQuery.data?.copyright && (
+              <p className="px-6 pb-4 text-center text-[11px] leading-relaxed text-muted-foreground">
+                {chapterQuery.data.copyright}
+              </p>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   )
 }
