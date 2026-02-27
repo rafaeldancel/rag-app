@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 import { createHash } from 'crypto'
-import { onCall, onRequest } from 'firebase-functions/v2/https'
+import { onCall, onRequest, HttpsError } from 'firebase-functions/v2/https'
 import { defineSecret } from 'firebase-functions/params'
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch'
 import { ENV } from './env'
@@ -59,27 +59,34 @@ function validateIngestUrl(raw: string): URL {
 // ── Chat (RAG Pipeline) ───────────────────────────────────────────
 
 export const chat = onCall({ cors: true, region: ENV.location }, async req => {
-  const question = String(req.data?.question || '').trim()
-  const validProfiles: PromptProfile[] = ['bible-study', 'general', 'strict']
-  const rawProfile = String(req.data?.profile || '')
-  const profile: PromptProfile = validProfiles.includes(rawProfile as PromptProfile)
-    ? (rawProfile as PromptProfile)
-    : 'bible-study'
-  const uid = req.auth?.uid
+  try {
+    const question = String(req.data?.question || '').trim()
+    const validProfiles: PromptProfile[] = ['bible-study', 'general', 'strict']
+    const rawProfile = String(req.data?.profile || '')
+    const profile: PromptProfile = validProfiles.includes(rawProfile as PromptProfile)
+      ? (rawProfile as PromptProfile)
+      : 'bible-study'
+    const uid = req.auth?.uid
 
-  if (!question) throw new Error('Missing question')
+    if (!question) throw new HttpsError('invalid-argument', 'Missing question')
 
-  // 50 RAG queries per 24 h per caller (uid if authed, else anonymous pool)
-  const rateLimitKey = `chat:${req.auth?.uid ?? 'anonymous'}`
-  await checkRateLimit(rateLimitKey, 50, 86_400_000)
+    // 50 RAG queries per 24 h per caller (uid if authed, else anonymous pool)
+    const rateLimitKey = `chat:${req.auth?.uid ?? 'anonymous'}`
+    await checkRateLimit(rateLimitKey, 50, 86_400_000)
 
-  const result = await ragQuery({ question, profile, uid })
+    const result = await ragQuery({ question, profile, uid })
 
-  return {
-    answer: result.answer,
-    sources: result.sources,
-    profile: result.profile,
-    chunksRetrieved: result.chunksRetrieved,
+    return {
+      answer: result.answer,
+      sources: result.sources,
+      profile: result.profile,
+      chunksRetrieved: result.chunksRetrieved,
+    }
+  } catch (err: unknown) {
+    console.error('Chat error:', err)
+    if (err instanceof HttpsError) throw err
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    throw new HttpsError('internal', message, err)
   }
 })
 

@@ -311,14 +311,15 @@ export function AIModal({ open, onClose, initialInput }: AIModalProps) {
         },
       ])
       setChatState('answered')
-    } catch (e) {
+    } catch (e: unknown) {
       console.error('Chat error:', e)
+      const errorMsg = e instanceof Error ? e.message : 'Something went wrong. Please try again.'
       setMessages(prev => [
         ...prev,
         {
           id: crypto.randomUUID(),
           role: 'assistant',
-          text: 'Something went wrong. Please try again.',
+          text: `Error: ${errorMsg}`,
         },
       ])
       setChatState('error')
